@@ -60,7 +60,7 @@
                 <i data-lucide="search" class="w-5 h-5 text-neonCyan"></i> Pedir Música
             </h2>
             <div class="flex gap-2">
-                <input type="text" id="searchInput" placeholder="Digite a música ou artista..." class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neonCyan transition-colors">
+                <input type="text" id="searchInput" onkeypress="handleKeyPress(event)" placeholder="Digite a música ou artista no Spotify..." class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neonCyan transition-colors">
                 <button onclick="searchRealMusic()" class="bg-neonCyan text-black font-bold px-6 py-3 rounded-lg hover:bg-white transition-colors">Buscar</button>
             </div>
             <div id="search-results" class="mt-4 flex flex-col gap-2 hidden"></div>
@@ -80,10 +80,15 @@
     <script>
         lucide.createIcons();
 
-        // CHAVES DO SUPABASE (Variável renomeada para supabaseClient para evitar conflito)
+        // CHAVES DO SUPABASE
         const supabaseUrl = 'https://tgbyxogyrugjfggugigf.supabase.co';
         const supabaseKey = 'sb_publishable_MJFbecAQa8GZ4LdNb5ruew_9N9bg2ro';
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // CHAVES DO SPOTIFY
+        const spotifyClientId = '3351b90e625048618d7f976a4f4b5a5a';
+        const spotifyClientSecret = '8bc683ac2c3d4c9ba31041a857b62537';
+        let spotifyToken = '';
 
         let isAdmin = false;
         let queue = [];
@@ -98,38 +103,70 @@
             renderQueue();
         }
 
-        // BUSCA REAL USANDO A API GRATUITA DO iTUNES
+        // Permite buscar com a tecla Enter
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                searchRealMusic();
+            }
+        }
+
+        // Obtém o Token de Acesso do Spotify
+        async function getSpotifyToken() {
+            const result = await fetch('https://accounts.spotify.com/api/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Authorization': 'Basic ' + btoa(spotifyClientId + ':' + spotifyClientSecret)
+                },
+                body: 'grant_type=client_credentials'
+            });
+            const data = await result.json();
+            spotifyToken = data.access_token;
+        }
+
+        // BUSCA REAL USANDO A API DO SPOTIFY
         async function searchRealMusic() {
             const input = document.getElementById('searchInput').value;
             if (!input) return;
 
             const resultsContainer = document.getElementById('search-results');
-            resultsContainer.innerHTML = '<p class="text-neonCyan text-sm">Buscando na internet...</p>';
+            resultsContainer.innerHTML = '<p class="text-neonCyan text-sm">Buscando no Spotify...</p>';
             resultsContainer.classList.remove('hidden');
 
             try {
-                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(input)}&entity=song&limit=5`);
-                const data = await res.json();
+                // Se não tiver token, pega um novo
+                if (!spotifyToken) await getSpotifyToken();
+
+                const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(input)}&type=track&limit=5`, {
+                    headers: { 'Authorization': 'Bearer ' + spotifyToken }
+                });
                 
+                // Se o token expirou, tenta pegar de novo
+                if (res.status === 401) {
+                    await getSpotifyToken();
+                    return searchRealMusic(); 
+                }
+
+                const data = await res.json();
                 resultsContainer.innerHTML = '';
 
-                if(data.results.length === 0) {
-                    resultsContainer.innerHTML = '<p class="text-gray-400 text-sm">Nenhuma música encontrada.</p>';
+                if(!data.tracks || data.tracks.items.length === 0) {
+                    resultsContainer.innerHTML = '<p class="text-gray-400 text-sm">Nenhuma música encontrada no Spotify.</p>';
                     return;
                 }
 
-                data.results.forEach(song => {
-                    const title = song.trackName.replace(/'/g, "\\'");
-                    const artist = song.artistName.replace(/'/g, "\\'");
-                    const coverUrl = song.artworkUrl100;
+                data.tracks.items.forEach(song => {
+                    const title = song.name.replace(/'/g, "\\'");
+                    const artist = song.artists[0].name.replace(/'/g, "\\'");
+                    const coverUrl = song.album.images[0]?.url || 'https://via.placeholder.com/100';
 
                     const resEl = document.createElement('div');
                     resEl.className = "flex items-center gap-4 bg-gray-800 p-2 rounded-lg";
                     resEl.innerHTML = `
                         <img src="${coverUrl}" class="w-10 h-10 rounded">
                         <div class="flex-1">
-                            <h4 class="text-white text-sm font-semibold">${song.trackName}</h4>
-                            <p class="text-xs text-gray-400">${song.artistName}</p>
+                            <h4 class="text-white text-sm font-semibold">${song.name}</h4>
+                            <p class="text-xs text-gray-400">${song.artists[0].name}</p>
                         </div>
                         <button onclick="addToQueueReal('${title}', '${artist}', '${coverUrl}')" class="p-2 text-neonPink hover:text-white transition-colors" title="Adicionar">
                             <i data-lucide="plus-circle"></i>
@@ -140,11 +177,11 @@
                 lucide.createIcons();
             } catch (error) {
                 console.error(error);
-                resultsContainer.innerHTML = '<p class="text-red-500 text-sm">Erro ao buscar música.</p>';
+                resultsContainer.innerHTML = '<p class="text-red-500 text-sm">Erro ao conectar com o Spotify.</p>';
             }
         }
 
-        // ADICIONA NO BANCO DE DADOS
+        // ADICIONA NO BANCO DE DADOS (Supabase)
         async function addToQueueReal(title, artist, coverUrl) {
             const { error } = await supabaseClient
                 .from('queue')
@@ -161,7 +198,7 @@
             }
         }
 
-        // LÊ DO BANCO DE DADOS
+        // LÊ DO BANCO DE DADOS (Supabase)
         async function fetchQueue() {
             try {
                 const { data, error } = await supabaseClient
@@ -171,12 +208,11 @@
                     .order('votes', { ascending: false });
                 
                 if (error) throw error;
-                
                 queue = data;
                 renderQueue();
             } catch (error) {
                 console.error("Erro no Banco:", error);
-                document.getElementById('queue-list').innerHTML = `<p class="text-red-500 text-sm">Erro: Verifique se o banco está rodando ou se a tabela existe.</p><p class="text-gray-500 text-xs">${error.message}</p>`;
+                document.getElementById('queue-list').innerHTML = `<p class="text-red-500 text-sm">Erro de conexão.</p>`;
             }
         }
 
@@ -235,7 +271,7 @@
             }
         }
 
-        // TEMPO REAL
+        // TEMPO REAL SUPABASE
         supabaseClient
             .channel('custom-all-channel')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, (payload) => { fetchQueue(); })
@@ -248,7 +284,7 @@
             }
         }, 1000);
 
-        // Inicia
+        // Inicia carregando as músicas
         fetchQueue();
     </script>
 </body>
