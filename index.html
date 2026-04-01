@@ -3,289 +3,237 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jukebox Comunitária - Neon Bar</title>
+    <title>Neon Jukebox - TV & Bar</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: { neonPink: '#ff00ff', neonCyan: '#00ffff', darkBg: '#0b0c10', darkCard: '#1f2833' }
-                }
-            }
+            theme: { extend: { colors: { neonPink: '#ff00ff', neonCyan: '#00ffff', darkBg: '#0b0c10', darkCard: '#1f2833' } } }
         }
     </script>
     <style>
-        body { background-color: #0b0c10; color: #c5c6c7; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .neon-text-pink { text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff; color: #fff; }
-        .neon-text-cyan { text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff; color: #fff; }
-        .neon-border-cyan { box-shadow: 0 0 8px #00ffff; border: 1px solid #00ffff; }
+        body { background-color: #0b0c10; color: #c5c6c7; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+        .neon-text-pink { text-shadow: 0 0 10px #ff00ff; color: #fff; }
+        .neon-border-cyan { box-shadow: 0 0 15px #00ffff; border: 1px solid #00ffff; }
         .progress-anim { width: 0%; transition: width 1s linear; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4">
 
-    <header class="w-full max-w-3xl flex justify-between items-center mb-8">
-        <h1 class="text-3xl font-bold neon-text-pink tracking-wider">NEON JUKEBOX</h1>
-        <button id="modeToggle" onclick="toggleMode()" class="px-4 py-2 rounded-full border border-gray-500 text-sm hover:border-[#ff00ff] hover:text-[#ff00ff] transition-all text-white">
-            Alternar para Admin
+    <header class="w-full max-w-4xl flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
+        <div>
+            <h1 class="text-4xl font-black neon-text-pink tracking-tighter italic">NEON BAR</h1>
+            <p class="text-xs text-neonCyan tracking-widest uppercase">Jukebox Comunitária</p>
+        </div>
+        <button id="modeToggle" onclick="toggleMode()" class="px-6 py-2 rounded-full border border-pink-500 text-pink-500 text-xs font-bold hover:bg-pink-500 hover:text-white transition-all">
+            ADMIN / TV
         </button>
     </header>
 
-    <main class="w-full max-w-3xl flex flex-col gap-6">
+    <main class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-3 gap-8">
         
-        <section class="bg-darkCard rounded-2xl p-6 neon-border-cyan relative overflow-hidden">
-            <h2 class="text-xs uppercase tracking-widest text-neonCyan mb-4 font-semibold">Agora Tocando</h2>
-            <div class="flex gap-4 items-center z-10 relative">
-                <img id="np-cover" src="https://i.scdn.co/image/ab67616d00001e02ff9ca10b55ce82ae553c8228" alt="Album Cover" class="w-20 h-20 rounded-lg shadow-[0_0_15px_#ff00ff]">
-                <div class="flex-1">
-                    <h3 id="np-title" class="text-xl font-bold text-white">Aguardando...</h3>
-                    <p id="np-artist" class="text-gray-400">DJ Neon</p>
+        <div class="md:col-span-2 flex flex-col gap-6">
+            
+            <section class="bg-darkCard rounded-3xl p-8 neon-border-cyan relative overflow-hidden">
+                <div class="flex gap-6 items-center">
+                    <img id="np-cover" src="https://via.placeholder.com/300?text=Neon+Bar" class="w-32 h-32 md:w-48 md:h-48 rounded-2xl shadow-2xl">
+                    <div class="flex-1">
+                        <span class="text-neonCyan text-xs font-bold uppercase tracking-widest">A tocar agora</span>
+                        <h3 id="np-title" class="text-3xl md:text-5xl font-bold text-white leading-none mt-2">Pronto para a festa?</h3>
+                        <p id="np-artist" class="text-xl text-gray-400 mt-2">Escolha uma música abaixo</p>
+                        <p id="np-suggester" class="text-sm text-pink-500 mt-4 font-mono"></p>
+                    </div>
                 </div>
-                <div id="admin-controls" class="hidden gap-2">
-                    <button class="p-3 bg-red-600 text-white rounded-full hover:bg-red-500 transition-colors" onclick="skipSong()" title="Pular Música">
-                        <i data-lucide="skip-forward"></i>
+                <div class="w-full bg-gray-900 h-3 rounded-full mt-8">
+                    <div id="progress-bar" class="bg-neonPink h-full rounded-full shadow-[0_0_10px_#ff00ff] progress-anim"></div>
+                </div>
+                
+                <div id="admin-controls" class="hidden mt-6 justify-end gap-4">
+                    <button onclick="skipSong()" class="bg-white text-black px-6 py-2 rounded-full font-bold flex items-center gap-2 hover:bg-neonCyan transition-all">
+                        <i data-lucide="skip-forward" class="w-4 h-4"></i> PRÓXIMA DA FILA
                     </button>
                 </div>
-            </div>
-            <div class="w-full bg-gray-800 h-2 rounded-full mt-6 overflow-hidden">
-                <div id="progress-bar" class="bg-neonPink h-full progress-anim"></div>
-            </div>
-        </section>
+            </section>
 
-        <section id="search-section" class="bg-darkCard rounded-2xl p-6">
-            <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <i data-lucide="search" class="w-5 h-5 text-neonCyan"></i> Pedir Música
-            </h2>
-            <div class="flex gap-2">
-                <input type="text" id="searchInput" onkeypress="handleKeyPress(event)" placeholder="Digite a música ou artista no Spotify..." class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neonCyan transition-colors">
-                <button onclick="searchRealMusic()" class="bg-neonCyan text-black font-bold px-6 py-3 rounded-lg hover:bg-white transition-colors">Buscar</button>
-            </div>
-            <div id="search-results" class="mt-4 flex flex-col gap-2 hidden"></div>
-        </section>
+            <section id="search-section" class="bg-gray-900/50 rounded-3xl p-6 border border-gray-800">
+                <div class="flex gap-3 mb-4">
+                    <input type="text" id="searchInput" onkeypress="if(event.key==='Enter') searchRealMusic()" placeholder="Qual música quer ouvir?" class="flex-1 bg-black border border-gray-700 rounded-2xl px-6 py-4 text-white focus:outline-none focus:border-neonPink transition-all">
+                    <button onclick="searchRealMusic()" class="bg-neonPink text-white font-bold px-8 rounded-2xl hover:scale-105 transition-transform">BUSCAR</button>
+                </div>
+                <div id="search-results" class="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto"></div>
+            </section>
+        </div>
 
-        <section class="bg-darkCard rounded-2xl p-6">
-            <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <i data-lucide="list-music" class="w-5 h-5 text-neonPink"></i> Fila Atual
-            </h2>
-            <div id="queue-list" class="flex flex-col gap-3">
-                <p class="text-gray-500 text-sm">Carregando fila...</p>
+        <div class="md:col-span-1">
+            <div class="sticky top-4">
+                <h2 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                    <i data-lucide="list-music" class="text-neonPink"></i> FILA DE ESPERA
+                </h2>
+                <div id="queue-list" class="flex flex-col gap-4">
+                    </div>
             </div>
-        </section>
-
+        </div>
     </main>
 
     <script>
-        lucide.createIcons();
-
-        // CHAVES DO SUPABASE
+        // CONFIGURAÇÕES
         const supabaseUrl = 'https://tgbyxogyrugjfggugigf.supabase.co';
         const supabaseKey = 'sb_publishable_MJFbecAQa8GZ4LdNb5ruew_9N9bg2ro';
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // CHAVES DO SPOTIFY
         const spotifyClientId = '3351b90e625048618d7f976a4f4b5a5a';
         const spotifyClientSecret = '8bc683ac2c3d4c9ba31041a857b62537';
         let spotifyToken = '';
 
+        // GERAR IDENTIDADE DO DISPOSITIVO (FINGERPRINT)
+        if (!localStorage.getItem('jukebox_user_id')) {
+            localStorage.setItem('jukebox_user_id', 'user_' + Math.random().toString(36).substr(2, 9));
+        }
+        const MY_ID = localStorage.getItem('jukebox_user_id');
+
         let isAdmin = false;
         let queue = [];
-        let isPlaying = true;
         let progress = 0;
 
-        function toggleMode() {
-            isAdmin = !isAdmin;
-            document.getElementById('modeToggle').innerText = isAdmin ? 'Alternar para Cliente' : 'Alternar para Admin';
-            document.getElementById('admin-controls').style.display = isAdmin ? 'flex' : 'none';
-            document.getElementById('search-section').style.display = isAdmin ? 'none' : 'block';
-            renderQueue();
-        }
-
-        // Permite buscar com a tecla Enter
-        function handleKeyPress(e) {
-            if (e.key === 'Enter') {
-                searchRealMusic();
-            }
-        }
-
-        // Obtém o Token de Acesso do Spotify
         async function getSpotifyToken() {
-            const result = await fetch('https://accounts.spotify.com/api/token', {
+            const res = await fetch('https://accounts.spotify.com/api/token', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Authorization': 'Basic ' + btoa(spotifyClientId + ':' + spotifyClientSecret)
-                },
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + btoa(spotifyClientId + ':' + spotifyClientSecret) },
                 body: 'grant_type=client_credentials'
             });
-            const data = await result.json();
+            const data = await res.json();
             spotifyToken = data.access_token;
         }
 
-        // BUSCA REAL USANDO A API DO SPOTIFY
         async function searchRealMusic() {
             const input = document.getElementById('searchInput').value;
             if (!input) return;
-
-            const resultsContainer = document.getElementById('search-results');
-            resultsContainer.innerHTML = '<p class="text-neonCyan text-sm">Buscando no Spotify...</p>';
-            resultsContainer.classList.remove('hidden');
+            const container = document.getElementById('search-results');
+            container.innerHTML = '<p class="p-4 animate-pulse text-neonCyan">A consultar Spotify...</p>';
+            container.classList.remove('hidden');
 
             try {
-                // Se não tiver token, pega um novo
                 if (!spotifyToken) await getSpotifyToken();
-
-                const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(input)}&type=track&limit=5`, {
+                const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(input)}&type=track&limit=6`, {
                     headers: { 'Authorization': 'Bearer ' + spotifyToken }
                 });
-                
-                // Se o token expirou, tenta pegar de novo
-                if (res.status === 401) {
-                    await getSpotifyToken();
-                    return searchRealMusic(); 
-                }
-
                 const data = await res.json();
-                resultsContainer.innerHTML = '';
-
-                if(!data.tracks || data.tracks.items.length === 0) {
-                    resultsContainer.innerHTML = '<p class="text-gray-400 text-sm">Nenhuma música encontrada no Spotify.</p>';
-                    return;
-                }
+                container.innerHTML = '';
 
                 data.tracks.items.forEach(song => {
-                    const title = song.name.replace(/'/g, "\\'");
-                    const artist = song.artists[0].name.replace(/'/g, "\\'");
-                    const coverUrl = song.album.images[0]?.url || 'https://via.placeholder.com/100';
-
-                    const resEl = document.createElement('div');
-                    resEl.className = "flex items-center gap-4 bg-gray-800 p-2 rounded-lg";
-                    resEl.innerHTML = `
-                        <img src="${coverUrl}" class="w-10 h-10 rounded">
-                        <div class="flex-1">
-                            <h4 class="text-white text-sm font-semibold">${song.name}</h4>
-                            <p class="text-xs text-gray-400">${song.artists[0].name}</p>
+                    const div = document.createElement('div');
+                    div.className = "flex items-center gap-4 bg-black/40 p-3 rounded-2xl border border-gray-800 hover:border-neonPink transition-all cursor-pointer group";
+                    div.onclick = () => prepareAdd(song.name, song.artists[0].name, song.album.images[0].url);
+                    div.innerHTML = `
+                        <img src="${song.album.images[2].url}" class="w-12 h-12 rounded-lg">
+                        <div class="flex-1 overflow-hidden">
+                            <p class="text-white font-bold truncate">${song.name}</p>
+                            <p class="text-xs text-gray-500">${song.artists[0].name}</p>
                         </div>
-                        <button onclick="addToQueueReal('${title}', '${artist}', '${coverUrl}')" class="p-2 text-neonPink hover:text-white transition-colors" title="Adicionar">
-                            <i data-lucide="plus-circle"></i>
-                        </button>
+                        <i data-lucide="plus" class="text-gray-600 group-hover:text-neonPink"></i>
                     `;
-                    resultsContainer.appendChild(resEl);
+                    container.appendChild(div);
                 });
                 lucide.createIcons();
-            } catch (error) {
-                console.error(error);
-                resultsContainer.innerHTML = '<p class="text-red-500 text-sm">Erro ao conectar com o Spotify.</p>';
-            }
+            } catch (e) { container.innerHTML = '<p class="text-red-500">Erro na busca.</p>'; }
         }
 
-        // ADICIONA NO BANCO DE DADOS (Supabase)
-        async function addToQueueReal(title, artist, coverUrl) {
-            const { error } = await supabaseClient
+        async function prepareAdd(title, artist, cover) {
+            // ANTI-SPAM: Verificar quantas músicas este user já tem na fila
+            const { data: mySongs } = await supabaseClient
                 .from('queue')
-                .insert([
-                    { title: title, artist: artist, cover_url: coverUrl, status: 'pending', votes: 0 }
-                ]);
-            
-            if(error) {
-                alert("Erro ao adicionar: " + error.message);
-                console.error(error);
-            } else {
-                document.getElementById('search-results').classList.add('hidden');
-                document.getElementById('searchInput').value = '';
-            }
-        }
+                .select('id')
+                .eq('user_id', MY_ID)
+                .eq('status', 'pending');
 
-        // LÊ DO BANCO DE DADOS (Supabase)
-        async function fetchQueue() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('queue')
-                    .select('*')
-                    .eq('status', 'pending')
-                    .order('votes', { ascending: false });
-                
-                if (error) throw error;
-                queue = data;
-                renderQueue();
-            } catch (error) {
-                console.error("Erro no Banco:", error);
-                document.getElementById('queue-list').innerHTML = `<p class="text-red-500 text-sm">Erro de conexão.</p>`;
-            }
-        }
-
-        function renderQueue() {
-            const queueContainer = document.getElementById('queue-list');
-            queueContainer.innerHTML = '';
-
-            if (queue.length === 0) {
-                queueContainer.innerHTML = '<p class="text-gray-500 text-sm">A fila está vazia. Peça uma música!</p>';
+            if (mySongs && mySongs.length >= 3) {
+                alert("Calma! Já tens 3 músicas na fila. Espera que toquem para pedires mais.");
                 return;
             }
 
-            queue.forEach(song => {
-                const songEl = document.createElement('div');
-                songEl.className = "flex items-center gap-4 bg-gray-900 p-3 rounded-xl border border-gray-800 hover:border-gray-600 transition-colors";
-                
-                let actionButton = isAdmin ? 
-                    `<button onclick="removeFromQueue('${song.id}')" class="p-2 text-red-500 hover:bg-gray-800 rounded-lg"><i data-lucide="trash-2"></i></button>` : 
-                    `<button onclick="upvote('${song.id}')" class="flex flex-col items-center justify-center p-2 text-neonCyan hover:bg-gray-800 rounded-lg"><i data-lucide="chevron-up" class="w-6 h-6"></i><span class="text-sm font-bold">${song.votes}</span></button>`;
+            const name = prompt("Qual é o teu nome? (Opcional)", localStorage.getItem('user_display_name') || "");
+            if (name !== null) {
+                localStorage.setItem('user_display_name', name);
+                addToQueueReal(title, artist, cover, name || "Anónimo");
+            }
+        }
 
-                songEl.innerHTML = `
-                    <img src="${song.cover_url}" class="w-12 h-12 rounded bg-black">
-                    <div class="flex-1">
-                        <h4 class="text-white font-semibold">${song.title}</h4>
-                        <p class="text-sm text-gray-400">${song.artist}</p>
+        async function addToQueueReal(title, artist, coverUrl, userName) {
+            const { error } = await supabaseClient.from('queue').insert([{ 
+                title, artist, cover_url: coverUrl, user_name: userName, user_id: MY_ID, status: 'pending', votes: 0 
+            }]);
+            if (error) alert("Erro: " + error.message);
+            document.getElementById('search-results').classList.add('hidden');
+            document.getElementById('searchInput').value = '';
+        }
+
+        async function fetchQueue() {
+            const { data } = await supabaseClient.from('queue').select('*').eq('status', 'pending').order('votes', { ascending: false });
+            queue = data || [];
+            renderQueue();
+        }
+
+        function renderQueue() {
+            const container = document.getElementById('queue-list');
+            container.innerHTML = '';
+            queue.forEach(song => {
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-4 bg-gray-900/80 p-4 rounded-2xl border border-gray-800 animate-in fade-in slide-in-from-right-4 duration-500";
+                div.innerHTML = `
+                    <div class="relative">
+                        <img src="${song.cover_url}" class="w-14 h-14 rounded-xl shadow-lg">
+                        <span class="absolute -top-2 -left-2 bg-neonPink text-white text-[10px] font-bold px-2 py-0.5 rounded-full">${song.votes}</span>
                     </div>
-                    ${actionButton}
+                    <div class="flex-1 min-w-0">
+                        <p class="text-white font-bold truncate">${song.title}</p>
+                        <p class="text-[10px] text-gray-500 uppercase tracking-tighter">Sugestão: <span class="text-neonCyan">${song.user_name}</span></p>
+                    </div>
+                    <button onclick="upvote('${song.id}')" class="p-3 bg-gray-800 rounded-xl hover:bg-neonPink transition-colors">
+                        <i data-lucide="heart" class="w-5 h-5 text-white"></i>
+                    </button>
+                    ${isAdmin ? `<button onclick="removeSong('${song.id}')" class="text-red-500 p-2"><i data-lucide="trash-2"></i></button>` : ''}
                 `;
-                queueContainer.appendChild(songEl);
+                container.appendChild(div);
             });
             lucide.createIcons();
         }
 
         async function upvote(id) {
             const song = queue.find(s => s.id === id);
-            if (song) {
-                await supabaseClient.from('queue').update({ votes: song.votes + 1 }).eq('id', id);
-            }
-        }
-
-        async function removeFromQueue(id) {
-            await supabaseClient.from('queue').delete().eq('id', id);
+            await supabaseClient.from('queue').update({ votes: (song.votes || 0) + 1 }).eq('id', id);
         }
 
         async function skipSong() {
             if (queue.length > 0) {
-                const nextSong = queue[0];
-                document.getElementById('np-title').innerText = nextSong.title;
-                document.getElementById('np-artist').innerText = nextSong.artist;
-                document.getElementById('np-cover').src = nextSong.cover_url;
+                const next = queue[0];
+                document.getElementById('np-title').innerText = next.title;
+                document.getElementById('np-artist').innerText = next.artist;
+                document.getElementById('np-cover').src = next.cover_url;
+                document.getElementById('np-suggester').innerText = "Sugerido por: " + next.user_name;
                 progress = 0;
-                
-                await supabaseClient.from('queue').update({ status: 'played' }).eq('id', nextSong.id);
-            } else {
-                alert("A fila está vazia!");
+                await supabaseClient.from('queue').update({ status: 'played' }).eq('id', next.id);
             }
         }
 
-        // TEMPO REAL SUPABASE
-        supabaseClient
-            .channel('custom-all-channel')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, (payload) => { fetchQueue(); })
-            .subscribe();
+        async function removeSong(id) { await supabaseClient.from('queue').delete().eq('id', id); }
 
-        setInterval(() => {
-            if (isPlaying && progress < 100) {
-                progress += 1;
-                document.getElementById('progress-bar').style.width = progress + '%';
-            }
-        }, 1000);
+        function toggleMode() {
+            isAdmin = !isAdmin;
+            document.getElementById('admin-controls').classList.toggle('hidden', !isAdmin);
+            document.getElementById('admin-controls').classList.toggle('flex', isAdmin);
+            document.getElementById('search-section').classList.toggle('hidden', isAdmin);
+            fetchQueue();
+        }
 
-        // Inicia carregando as músicas
+        // REALTIME
+        supabaseClient.channel('queue_realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, () => fetchQueue()).subscribe();
+
+        setInterval(() => { if (progress < 100) { progress += 0.5; document.getElementById('progress-bar').style.width = progress + '%'; } }, 1000);
+
         fetchQueue();
+        lucide.createIcons();
     </script>
 </body>
 </html>
