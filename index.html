@@ -22,26 +22,36 @@
         .header { padding: 20px; border-bottom: 1px solid #333; }
         .logo { color: var(--neon-red); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin: 0; }
 
-        /* Now Playing Card */
+        /* Painel Now Playing */
         .now-playing {
             background: linear-gradient(145deg, #222, #111);
             margin: 20px; padding: 20px; border-radius: 20px;
             border: 1px solid var(--neon-red);
-            display: flex; flex-direction: column; /* Mudado para coluna para caber a barra */
+            display: flex; flex-direction: column; 
             box-shadow: 0 0 15px rgba(255, 0, 0, 0.2);
         }
 
         .player-main { display: flex; align-items: center; width: 100%; margin-bottom: 15px; }
-
         .album-art { width: 65px; height: 65px; border-radius: 10px; margin-right: 15px; object-fit: cover; }
         .track-info b { font-size: 1.1rem; display: block; margin-bottom: 3px; }
         .track-info span { color: var(--text-gray); font-size: 0.85rem; }
 
-        /* Progress Bar */
-        .progress-container { width: 100%; height: 4px; background: #333; border-radius: 10px; overflow: hidden; }
-        .progress-bar { width: 0%; height: 100%; background: var(--neon-red); transition: width 1s linear; }
+        /* Estilo da Barra de Progresso */
+        .progress-container { 
+            width: 100%; 
+            height: 4px; 
+            background: #333; 
+            border-radius: 10px; 
+            overflow: hidden; 
+        }
+        .progress-bar { 
+            width: 0%; 
+            height: 100%; 
+            background: var(--neon-red); 
+            transition: width 1s linear; 
+        }
 
-        /* Search Section */
+        /* Pesquisa */
         .search-container { padding: 0 20px; }
         .search-box {
             width: 100%; padding: 15px 20px; background: #222; border: 1px solid #333;
@@ -119,7 +129,7 @@
         } else if (accessToken) {
             showApp();
             updatePlayer();
-            setInterval(updatePlayer, 3000); // Atualiza mais rápido (3s) para a barra ser fluída
+            setInterval(updatePlayer, 3000); // Atualiza de 3 em 3 segundos para suavizar a barra
         }
     }
 
@@ -163,14 +173,14 @@
                     document.getElementById('current-name').innerText = data.item.name;
                     document.getElementById('current-artist').innerText = data.item.artists[0].name;
                     
-                    // CALCULAR PROGRESSO
+                    // Cálculo da Barra de Progresso
                     const progress = data.progress_ms;
                     const duration = data.item.duration_ms;
                     const percent = (progress / duration) * 100;
                     document.getElementById('progress').style.width = percent + '%';
                 }
             }
-        } catch (e) { console.error("Erro no player", e); }
+        } catch (e) { console.error("Erro ao atualizar player", e); }
     }
 
     async function buscar() {
@@ -192,7 +202,7 @@
             method: 'POST',
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
-        if (res.ok) alert("Na fila do Portinha!");
+        if (res.ok) alert("Música enviada para a fila do Portinha!");
     }
 
     init();
