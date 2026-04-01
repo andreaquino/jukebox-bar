@@ -36,9 +36,19 @@
 </div>
 
 <script>
-    const CLIENT_ID = '3351b90e625048618d7f976a4f4b5a5a'; // <--- COLA AQUI O TEU ID
+    const CLIENT_ID = '3351b90e625048618d7f976a4f4b5a5a';
+    const CLIENT_SECRET = '8bc683ac2c3d4c9ba31041a857b62537'; // <-- NOVO
     const REDIRECT_URI = 'https://andreaquino.github.io/jukebox-bar/';
-    let token = new URLSearchParams(window.location.hash.replace('#','?')).get('access_token');
+
+    // Lógica para capturar o código ou o token
+    const urlParams = new URLSearchParams(window.location.search);
+    let code = urlParams.get('code');
+    let token = localStorage.getItem('spotify_token');
+
+    if (code) {
+        // Se temos um código, vamos trocá-lo por um token
+        trocarCodigoPorToken(code);
+    }
 
     if (token) {
         document.getElementById('login-section').style.display = 'none';
@@ -46,25 +56,39 @@
     }
 
     function loginSpotify() {
-    const scopes = 'user-modify-playback-state user-read-playback-state streaming';
-    
-    // Vamos usar o fluxo de "Token" que o Spotify ainda permite se for bem chamado
-    const authUrl = new URL("https://accounts.spotify.com/authorize");
-    authUrl.searchParams.append("client_id", CLIENT_ID);
-    authUrl.searchParams.append("response_type", "token"); // Garante que pedimos o token direto
-    authUrl.searchParams.append("redirect_uri", REDIRECT_URI);
-    authUrl.searchParams.append("scope", scopes);
-    authUrl.searchParams.append("show_dialog", "true");
+        const scopes = 'user-modify-playback-state user-read-playback-state streaming';
+        // MUDANÇA AQUI: response_type agora é CODE
+        const authUrl = `https://accounts.spotify.com/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scopes)}&show_dialog=true`;
+        window.location.href = authUrl;
+    }
 
-    window.location.href = authUrl.toString();
-}
+    async function trocarCodigoPorToken(code) {
+        const res = await fetch('https://accounts.spotify.com/api/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Authorization': 'Basic ' + btoa(CLIENT_ID + ':' + CLIENT_SECRET)
+            },
+            body: new URLSearchParams({
+                grant_type: 'authorization_code',
+                code: code,
+                redirect_uri: REDIRECT_URI
+            })
+        });
+        const data = await res.json();
+        if (data.access_token) {
+            localStorage.setItem('spotify_token', data.access_token);
+            window.location.href = REDIRECT_URI; // Limpa o código do URL
+        }
+    }
 
     async function buscar() {
         const q = document.getElementById('query').value;
         if (q.length < 3) return;
+        const currentToken = localStorage.getItem('spotify_token');
 
         const res = await fetch(`https://api.spotify.com/v1/search?q=${q}&type=track&limit=5`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 'Authorization': `Bearer ${currentToken}` }
         });
         const data = await res.json();
         
@@ -83,17 +107,16 @@
     }
 
     async function adicionarFila(uri, nome) {
+        const currentToken = localStorage.getItem('spotify_token');
         const res = await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${uri}`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 'Authorization': `Bearer ${currentToken}` }
         });
 
         if (res.ok) {
-            alert(`✅ "${nome}" adicionada à fila do bar!`);
-            document.getElementById('query').value = '';
-            document.getElementById('results').innerHTML = '';
+            alert(`✅ "${nome}" na fila!`);
         } else {
-            alert('Erro: Certifica-te que o Spotify está aberto e a tocar no bar!');
+            alert('Erro: Abre o Spotify no bar primeiro!');
         }
     }
 </script>
