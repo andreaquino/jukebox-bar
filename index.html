@@ -31,7 +31,7 @@
             </div>
         </div>
         <div class="flex gap-2">
-            <button id="spotifyLoginBtn" onclick="loginSpotify()" class="px-4 py-2 bg-[#1DB954] text-black text-xs font-bold rounded-full hover:scale-105 transition-all">
+            <button id="spotifyLoginBtn" onclick="loginSpotify()" class="px-4 py-2 bg-[#1DB954] text-black text-xs font-bold rounded-full hover:scale-105 transition-all hidden">
                 LOGAR SPOTIFY
             </button>
             <button onclick="toggleMode()" class="px-4 py-2 border border-neonCyan text-neonCyan text-xs rounded-full">ADMIN / TV</button>
@@ -43,11 +43,11 @@
             <section id="player-card" class="bg-darkCard rounded-3xl p-8 neon-border-cyan relative overflow-hidden transition-all duration-500">
                 <div class="flex gap-6 items-center">
                     <img id="np-cover" src="https://via.placeholder.com/300?text=Neon+Bar" class="w-32 h-32 md:w-48 md:h-48 rounded-2xl shadow-2xl transition-all">
-                    <div class="flex-1">
+                    <div class="flex-1 overflow-hidden">
                         <span class="text-neonCyan text-xs font-bold uppercase">A tocar agora</span>
                         <h3 id="np-title" class="text-3xl md:text-5xl font-bold text-white mt-2 truncate">Pronto?</h3>
                         <p id="np-artist" class="text-xl text-gray-400">Aguarda um pedido...</p>
-                        <p id="np-suggester" class="text-sm text-pink-500 mt-4 font-mono font-bold"></p>
+                        <p id="np-suggester" class="text-sm text-pink-500 mt-4 font-mono font-bold truncate"></p>
                     </div>
                 </div>
 
@@ -92,37 +92,79 @@
         const spotifySecret = '8bc683ac2c3d4c9ba31041a857b62537';
         let spotifyAccessToken = localStorage.getItem('spotify_token');
         let autoMode = false;
-        let lastAddedUri = null; // Para não adicionar a mesma música duas vezes
+        let lastAddedUri = null; 
+        let isAdmin = false;
 
-        // LOGIN E TOKEN
-        const hash = window.location.hash.substring(1).split('&').reduce((initial, item) => {
-            if (item) { var parts = item.split('='); initial[parts[0]] = decodeURIComponent(parts[1]); }
-            return initial;
-        }, {});
-        if (hash.access_token) {
-            spotifyAccessToken = hash.access_token;
-            localStorage.setItem('spotify_token', spotifyAccessToken);
-            window.location.hash = "";
+        // OBTÉM A URL LIMPA PARA REDIRECT
+        const redirectUri = window.location.href.split('?')[0].split('#')[0];
+
+        // 1. VERIFICA SE O SPOTIFY DEVOLVEU UM "CODE" NA URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+
+        if (code) {
+            // Limpa a URL para ficar bonita novamente
+            window.history.replaceState({}, document.title, window.location.pathname);
+            exchangeCodeForToken(code);
+        } else if (spotifyAccessToken) {
+            // Se já tiver token guardado, apenas verifica se é válido
             checkSpotifyStatus();
         }
 
+        // REDIRECIONA PARA O SPOTIFY COM RESPONSE_TYPE=CODE
         function loginSpotify() {
             const scope = 'user-modify-playback-state user-read-playback-state user-read-currently-playing';
-            const redirectUri = window.location.href.split('#')[0];
-            window.location.href = `https://accounts.spotify.com/authorize?client_id=${spotifyClientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
+            // URL OFICIAL DO SPOTIFY AQUI
+            window.location.href = `https://accounts.spotify.com/authorize?client_id=${spotifyClientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
+        }
+
+        // TROCA O "CODE" PELO TOKEN DE ACESSO REAL
+        async function exchangeCodeForToken(authCode) {
+            // URL OFICIAL DO SPOTIFY AQUI
+            const res = await fetch('https://accounts.spotify.com/api/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Authorization': 'Basic ' + btoa(spotifyClientId + ':' + spotifySecret)
+                },
+                body: `grant_type=authorization_code&code=${authCode}&redirect_uri=${encodeURIComponent(redirectUri)}`
+            });
+            const data = await res.json();
+            
+            if (data.access_token) {
+                spotifyAccessToken = data.access_token;
+                localStorage.setItem('spotify_token', spotifyAccessToken);
+                
+                // Ativa o painel de Admin automaticamente
+                isAdmin = true;
+                document.getElementById('admin-controls').classList.remove('hidden');
+                document.getElementById('spotifyLoginBtn').classList.add('hidden');
+                document.getElementById('search-section').classList.add('hidden');
+                
+                checkSpotifyStatus();
+            } else {
+                console.error("Erro na autenticação:", data);
+                alert("Erro ao ligar ao Spotify. Verifica a Consola.");
+            }
         }
 
         async function checkSpotifyStatus() {
             if (!spotifyAccessToken) return;
+            // URL OFICIAL DO SPOTIFY AQUI
             const res = await fetch('https://api.spotify.com/v1/me/player', {
                 headers: { 'Authorization': 'Bearer ' + spotifyAccessToken }
             });
-            if (res.ok) {
-                document.getElementById('connection-status').innerText = "Spotify: Conectado (Auto On)";
+            
+            // 200 OK ou 204 No Content significam que o token é válido
+            if (res.ok || res.status === 204) {
+                document.getElementById('connection-status').innerText = "Spotify: Conectado (Controlo Ativo)";
                 document.getElementById('status-dot').classList.replace('bg-red-500', 'bg-green-500');
-                document.getElementById('spotifyLoginBtn').classList.add('hidden');
+                if(isAdmin) document.getElementById('spotifyLoginBtn').classList.add('hidden');
             } else if (res.status === 401) {
-                loginSpotify(); // Token expirou
+                // Se der 401, o token expirou. Apaga e obriga a logar.
+                localStorage.removeItem('spotify_token');
+                spotifyAccessToken = null;
+                if(isAdmin) loginSpotify(); 
             }
         }
 
@@ -131,23 +173,32 @@
             const query = document.getElementById('searchInput').value;
             if (!query) return;
             const token = spotifyAccessToken || await getPublicToken();
+            
+            // URL OFICIAL DO SPOTIFY AQUI
             const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`, {
                 headers: { 'Authorization': 'Bearer ' + token }
             });
             const data = await res.json();
             const results = document.getElementById('search-results');
             results.innerHTML = "";
+            
+            if(!data.tracks || data.tracks.items.length === 0) {
+                results.innerHTML = '<p class="text-gray-400 text-sm">Nenhuma música encontrada.</p>';
+                return;
+            }
+
             data.tracks.items.forEach(song => {
                 const div = document.createElement('div');
                 div.className = "flex items-center gap-4 bg-black/40 p-3 rounded-2xl border border-gray-800 hover:border-neonPink cursor-pointer transition-all";
                 div.onclick = () => addToQueue(song);
-                div.innerHTML = `<img src="${song.album.images[2].url}" class="w-10 h-10 rounded"><div><p class="text-sm font-bold text-white">${song.name}</p><p class="text-[10px] text-gray-500">${song.artists[0].name}</p></div>`;
+                div.innerHTML = `<img src="${song.album.images[2]?.url || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded"><div><p class="text-sm font-bold text-white">${song.name}</p><p class="text-[10px] text-gray-500">${song.artists[0].name}</p></div>`;
                 results.appendChild(div);
             });
             lucide.createIcons();
         }
 
         async function getPublicToken() {
+            // URL OFICIAL DO SPOTIFY AQUI
             const res = await fetch('https://accounts.spotify.com/api/token', {
                 method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + btoa(spotifyClientId + ':' + spotifySecret) },
                 body: 'grant_type=client_credentials'
@@ -158,7 +209,11 @@
         async function addToQueue(song) {
             const myID = localStorage.getItem('jukebox_user_id') || 'u_' + Math.random().toString(36).substr(2, 9);
             localStorage.setItem('jukebox_user_id', myID);
-            const name = prompt("Teu nome para a TV?");
+            
+            const { data: count } = await supabaseClient.from('queue').select('id').eq('user_id', myID).eq('status', 'pending');
+            if (count && count.length >= 3) return alert("Calma! Tens um limite de 3 músicas na fila. Espera as tuas tocarem primeiro.");
+
+            const name = prompt("Qual o teu nome para aparecer na TV?");
             await supabaseClient.from('queue').insert([{
                 title: song.name, artist: song.artists[0].name, cover_url: song.album.images[0].url, 
                 spotify_uri: song.uri, user_name: name || "Anónimo", user_id: myID, status: 'pending', votes: 0
@@ -167,7 +222,7 @@
             document.getElementById('searchInput').value = "";
         }
 
-        // LÓGICA DE AUTOMAÇÃO (A PARTE QUE PEDISTE)
+        // LÓGICA DE AUTOMAÇÃO
         function updateAutoMode() {
             autoMode = document.getElementById('autoModeToggle').checked;
             document.getElementById('auto-indicator').classList.toggle('hidden', !autoMode);
@@ -179,21 +234,23 @@
             if (!autoMode || !spotifyAccessToken) return;
 
             try {
+                // URL OFICIAL DO SPOTIFY AQUI
                 const res = await fetch('https://api.spotify.com/v1/me/player', {
                     headers: { 'Authorization': 'Bearer ' + spotifyAccessToken }
                 });
 
                 if (res.status === 200) {
                     const data = await res.json();
+                    if (!data || !data.item) return;
+                    
                     const timeLeft = data.item.duration_ms - data.progress_ms;
 
-                    // Se faltar menos de 10 segundos e ainda não tivermos adicionado esta música
                     if (timeLeft <= 12000 && timeLeft > 0 && lastAddedUri !== data.item.uri) {
-                        console.log("Música a acabar... preparando próxima!");
+                        console.log("A preparar a próxima música!");
                         autoPlayNext();
                     }
                 }
-            } catch (e) { console.error("Erro na monitorização:", e); }
+            } catch (e) { console.error("Erro no monitor de reprodução:", e); }
         }
 
         async function autoPlayNext() {
@@ -201,15 +258,13 @@
             
             if (data && data.length > 0) {
                 const song = data[0];
-                
-                // Enviar para o Spotify
-                const res = await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${song.spotify_uri}`, {
+                // URL OFICIAL DO SPOTIFY AQUI
+                const res = await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(song.spotify_uri)}`, {
                     method: 'POST', headers: { 'Authorization': 'Bearer ' + spotifyAccessToken }
                 });
 
                 if (res.ok) {
-                    lastAddedUri = song.spotify_uri; // Marca como adicionada para não repetir nos 10s
-                    // Atualiza logo o visual da TV para o pessoal saber o que vem aí
+                    lastAddedUri = song.spotify_uri; 
                     updateTVInterface(song);
                     await supabaseClient.from('queue').update({ status: 'played' }).eq('id', song.id);
                 }
@@ -234,7 +289,7 @@
             (data || []).forEach(song => {
                 const div = document.createElement('div');
                 div.className = "flex items-center gap-3 bg-gray-900/50 p-4 rounded-2xl border border-gray-800 animate-in fade-in slide-in-from-right";
-                div.innerHTML = `<img src="${song.cover_url}" class="w-10 h-10 rounded-lg shadow-lg"> <div class="flex-1 overflow-hidden"><p class="text-xs font-bold text-white truncate">${song.title}</p><p class="text-[9px] text-neonCyan font-mono">${song.user_name}</p></div> <button onclick="upvote('${song.id}')" class="px-3 py-2 bg-gray-800 rounded-xl text-[10px] font-black text-white hover:bg-neonPink transition-all">❤️ ${song.votes}</button>`;
+                div.innerHTML = `<img src="${song.cover_url}" class="w-10 h-10 rounded-lg shadow-lg"> <div class="flex-1 overflow-hidden"><p class="text-xs font-bold text-white truncate">${song.title}</p><p class="text-[9px] text-neonCyan font-mono truncate">${song.user_name}</p></div> <button onclick="upvote('${song.id}')" class="px-3 py-2 bg-gray-800 rounded-xl text-[10px] font-black text-white hover:bg-neonPink transition-all shrink-0">❤️ ${song.votes}</button>`;
                 container.appendChild(div);
             });
             lucide.createIcons();
@@ -246,17 +301,29 @@
         }
 
         function toggleMode() {
+            if (!isAdmin) {
+                const senha = prompt("Acesso restrito. Digita o PIN de Admin:");
+                if (senha !== "1234") {
+                    alert("PIN incorreto!");
+                    return;
+                }
+            }
             isAdmin = !isAdmin;
             document.getElementById('admin-controls').classList.toggle('hidden', !isAdmin);
+            
+            if (isAdmin && !spotifyAccessToken) {
+                document.getElementById('spotifyLoginBtn').classList.remove('hidden');
+            } else {
+                document.getElementById('spotifyLoginBtn').classList.add('hidden');
+            }
+            
             document.getElementById('search-section').classList.toggle('hidden', isAdmin);
             fetchQueue();
         }
 
-        // TIMERS E REALTIME
-        setInterval(monitorPlayback, 3000); // Verifica o Spotify de 3 em 3 segundos
+        setInterval(monitorPlayback, 3000); 
         supabaseClient.channel('q').on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, () => fetchQueue()).subscribe();
         
-        checkSpotifyStatus();
         fetchQueue();
         lucide.createIcons();
     </script>
