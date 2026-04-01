@@ -8,11 +8,14 @@
         :root { --neon-red: #FF0000; --dark-bg: #0a0a0a; --card-bg: #1a1a1a; --text-gray: #a0a0a0; }
         body { background-color: var(--dark-bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 100px; overflow-x: hidden; }
         .header { padding: 20px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
-        .logo { color: var(--neon-red); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin: 0; text-decoration: none; }
+        .logo { color: var(--neon-red); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin: 0; text-decoration: none; font-size: 1.5rem; }
         
         .now-playing { background: linear-gradient(145deg, #222, #111); margin: 20px; padding: 20px; border-radius: 20px; border: 1px solid var(--neon-red); box-shadow: 0 0 15px rgba(255, 0, 0, 0.2); }
         .player-main { display: flex; align-items: center; margin-bottom: 15px; }
-        .album-art { width: 65px; height: 65px; border-radius: 10px; margin-right: 15px; background: #333; object-fit: cover; }
+        
+        /* CSS AJUSTADO PARA O ÍCONE GENÉRICO */
+        .album-art-container { width: 65px; height: 65px; border-radius: 10px; margin-right: 15px; background: #333; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #444; }
+        .album-art { width: 100%; height: 100%; object-fit: cover; }
         
         .progress-container { width: 100%; height: 4px; background: #333; border-radius: 10px; overflow: hidden; margin-top: 10px; }
         .progress-bar { width: 0%; height: 100%; background: var(--neon-red); transition: width 1s linear; }
@@ -35,22 +38,25 @@
 
     <div id="login-section" class="login-overlay" style="display:none;">
         <h1 class="logo" style="font-size: 3rem; margin-bottom: 20px;">Portinha</h1>
+        <p style="color:gray">Painel de Controlo do Bar</p>
         <button class="btn-login" onclick="loginSpotify()">LOGIN STAFF (SPOTIFY)</button>
     </div>
 
     <div id="app-section">
         <div class="header">
             <a href="/" class="logo">Portinha</a>
-            <span id="badge" style="font-size: 0.6rem; border: 1px solid #444; padding: 3px 8px; border-radius: 5px; color: #888;">CLIENTE</span>
+            <span id="badge" style="font-size: 0.6rem; border: 1px solid #444; padding: 3px 8px; border-radius: 5px; color: #888; text-transform: uppercase;">MODO CLIENTE</span>
         </div>
 
         <div class="now-playing">
             <div class="player-main">
-                <img src="" class="album-art" id="current-art">
+                <div class="album-art-container">
+                    <img src="" class="album-art" id="current-art" onerror="this.src='https://firebasestorage.googleapis.com/v0/b/jukebox-17937.appspot.com/o/default_album.png?alt=media&token=866085a8-20d0-4822-a9b0-95123d91341c'">
+                </div>
                 <div class="track-info">
                     <span style="color: var(--neon-red); font-size: 0.7rem; font-weight: bold;">A TOCAR AGORA</span>
-                    <b id="current-name" style="display:block; font-size: 1.1rem;">A ligar ao bar...</b>
-                    <span id="current-artist" style="color:var(--text-gray); font-size:0.9rem;">Taproom</span>
+                    <b id="current-name" style="display:block; font-size: 1.1rem; color: #aaa;">Silêncio no bar...</b>
+                    <span id="current-artist" style="color:var(--text-gray); font-size:0.9rem;">O staff precisa de iniciar sessão.</span>
                 </div>
             </div>
             <div class="progress-container"><div id="progress" class="progress-bar"></div></div>
@@ -70,6 +76,7 @@
     </div>
 
 <script>
+    // --- ATENÇÃO: SUBSTITUI PELO TEU LINK DO FIREBASE ---
     const FIREBASE_URL = 'https://portinha-jukebox-default-rtdb.europe-west1.firebasedatabase.app';
     const CLIENT_ID = '3351b90e625048618d7f976a4f4b5a5a';
     const CLIENT_SECRET = '8bc683ac2c3d4c9ba31041a857b62537';
@@ -99,6 +106,11 @@
             setInterval(updatePlayer, 3000);
         } else if (isAdmin) {
             document.getElementById('login-section').style.display = 'flex';
+        } else {
+            // Se for cliente e não houver token (jukebox desligada)
+            document.getElementById('current-name').innerText = "Jukebox Offline";
+            document.getElementById('current-name').style.color = "white"; // Garante cor branca no offline
+            document.getElementById('current-artist').innerText = "O staff precisa de iniciar sessão.";
         }
     }
 
@@ -125,18 +137,26 @@
     }
 
     async function updatePlayer() {
+        if (!accessToken) return; // Segurança extra
         try {
             const res = await fetch('https://api.spotify.com/v1/me/player', { headers: { 'Authorization': `Bearer ${accessToken}` } });
             if (res.status === 200) {
                 const data = await res.json();
-                document.getElementById('current-art').src = data.item.album.images[0].url;
-                document.getElementById('current-name').innerText = data.item.name;
-                document.getElementById('current-artist').innerText = data.item.artists[0].name;
-                document.getElementById('progress').style.width = (data.progress_ms / data.item.duration_ms * 100) + '%';
-            } else if (res.status === 401) {
-                // Token expirou? (Aqui entrará a lógica de refresh no próximo passo)
+                if (data.item) { // Garante que há uma música a tocar
+                    document.getElementById('current-art').src = data.item.album.images[0].url;
+                    document.getElementById('current-name').innerText = data.item.name;
+                    document.getElementById('current-name').style.color = "white"; // Restaura cor branca
+                    document.getElementById('current-artist').innerText = data.item.artists[0].name;
+                    document.getElementById('progress').style.width = (data.progress_ms / data.item.duration_ms * 100) + '%';
+                }
+            } else if (res.status === 204) { // Spotify em pausa/parado
+                document.getElementById('current-name').innerText = "Spotify parado";
+                document.getElementById('current-name').style.color = "#aaa"; // Acinzenta o texto
+                document.getElementById('current-artist').innerText = "O staff precisa de dar o play no bar.";
+                // Reseta a imagem para o ícone genérico se estiver parado
+                document.getElementById('current-art').src = "https://firebasestorage.googleapis.com/v0/b/jukebox-17937.appspot.com/o/default_album.png?alt=media&token=866085a8-20d0-4822-a9b0-95123d91341c";
             }
-        } catch (e) { console.log("Spotify offline"); }
+        } catch (e) { console.log("Erro ao ligar ao Spotify"); }
     }
 
     function loginSpotify() {
@@ -171,7 +191,7 @@
 
     async function enqueue(uri) {
         const now = Date.now();
-        if (now - lastRequestTime < 300000) { 
+        if (now - lastRequestTime < 300000) { // 5 min de Cooldown
             alert("O Portinha agradece a pica! Mas espera 5 min para pedires outra."); 
             return; 
         }
