@@ -22,64 +22,60 @@
         .header { padding: 20px; border-bottom: 1px solid #333; }
         .logo { color: var(--neon-red); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin: 0; }
 
-        /* Painel Now Playing */
+        /* Now Playing Card */
         .now-playing {
             background: linear-gradient(145deg, #222, #111);
             margin: 20px; padding: 20px; border-radius: 20px;
             border: 1px solid var(--neon-red);
-            display: flex; flex-direction: column; 
+            display: flex; flex-direction: column;
             box-shadow: 0 0 15px rgba(255, 0, 0, 0.2);
         }
 
         .player-main { display: flex; align-items: center; width: 100%; margin-bottom: 15px; }
-        .album-art { width: 65px; height: 65px; border-radius: 10px; margin-right: 15px; object-fit: cover; }
+        .album-art { width: 65px; height: 65px; border-radius: 10px; margin-right: 15px; object-fit: cover; background: #333; }
         .track-info b { font-size: 1.1rem; display: block; margin-bottom: 3px; }
         .track-info span { color: var(--text-gray); font-size: 0.85rem; }
 
-        /* Estilo da Barra de Progresso */
-        .progress-container { 
-            width: 100%; 
-            height: 4px; 
-            background: #333; 
-            border-radius: 10px; 
-            overflow: hidden; 
-        }
-        .progress-bar { 
-            width: 0%; 
-            height: 100%; 
-            background: var(--neon-red); 
-            transition: width 1s linear; 
-        }
+        /* Progress Bar */
+        .progress-container { width: 100%; height: 4px; background: #333; border-radius: 10px; overflow: hidden; }
+        .progress-bar { width: 0%; height: 100%; background: var(--neon-red); transition: width 1s linear; }
 
-        /* Pesquisa */
+        /* Admin Controls */
+        .admin-controls { display: flex; justify-content: center; gap: 25px; margin-top: 15px; align-items: center; }
+        .btn-ctrl { background: none; border: none; color: white; cursor: pointer; font-size: 1.5rem; transition: 0.2s; }
+        .btn-ctrl:active { transform: scale(0.9); color: var(--neon-red); }
+        .btn-play-pause { background: var(--neon-red); border: none; color: white; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 0 10px rgba(255,0,0,0.3); }
+
+        /* Search Section */
         .search-container { padding: 0 20px; }
         .search-box {
             width: 100%; padding: 15px 20px; background: #222; border: 1px solid #333;
-            border-radius: 50px; color: white; outline: none; box-sizing: border-box;
+            border-radius: 50px; color: white; outline: none; box-sizing: border-box; font-size: 1rem;
         }
         .search-box:focus { border-color: var(--neon-red); }
 
         .results-list { margin-top: 15px; }
         .track-item {
             display: flex; align-items: center; background: var(--card-bg);
-            padding: 10px; margin-bottom: 10px; border-radius: 15px;
+            padding: 10px; margin-bottom: 10px; border-radius: 15px; border: 1px solid transparent;
         }
+        .track-item:hover { border-color: #333; }
 
         .btn-add {
             margin-left: auto; background: var(--neon-red); color: white;
-            border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; cursor: pointer;
+            border: none; padding: 10px 18px; border-radius: 20px; font-weight: bold; cursor: pointer;
         }
 
+        /* Login Screen */
         .login-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--dark-bg); display: flex; flex-direction: column;
             justify-content: center; align-items: center; z-index: 1000;
         }
-
         .btn-login {
             background: var(--neon-red); color: white; padding: 18px 40px;
             border-radius: 50px; font-weight: bold; border: none; cursor: pointer;
-            box-shadow: 0 0 20px rgba(255, 0, 0, 0.4);
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.4); font-size: 1.1rem;
         }
     </style>
 </head>
@@ -100,11 +96,19 @@
                 <div class="track-info">
                     <span style="color: var(--neon-red); font-size: 0.7rem; font-weight: bold; text-transform: uppercase;">A Tocar Agora</span>
                     <b id="current-name">Silêncio...</b>
-                    <span id="current-artist">Abre o Spotify no Portinha</span>
+                    <span id="current-artist">Dá o Play no Spotify</span>
                 </div>
             </div>
+            
             <div class="progress-container">
                 <div id="progress" class="progress-bar"></div>
+            </div>
+
+            <div class="admin-controls">
+                <button class="btn-ctrl" onclick="spotifyControl('previous')">⏮</button>
+                <button class="btn-play-pause" onclick="spotifyControl('play')">▶</button>
+                <button class="btn-play-pause" style="background:#333;" onclick="spotifyControl('pause')">II</button>
+                <button class="btn-ctrl" onclick="spotifyControl('next')">⏭</button>
             </div>
         </div>
 
@@ -115,13 +119,15 @@
     </div>
 
 <script>
-    const CLIENT_ID = '3351b90e625048618d7f976a4f4b5a5a';
+    const CLIENT_ID = '3351b90e625048618d7f976a4f4b5a5a'; 
     const CLIENT_SECRET = '8bc683ac2c3d4c9ba31041a857b62537'; 
     const REDIRECT_URI = 'https://andreaquino.github.io/jukebox-bar/';
 
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
     let accessToken = localStorage.getItem('spotify_token');
+    let lastRequestTime = 0;
+    const COOLDOWN_MINUTES = 5;
 
     async function init() {
         if (authCode) {
@@ -129,7 +135,7 @@
         } else if (accessToken) {
             showApp();
             updatePlayer();
-            setInterval(updatePlayer, 3000); // Atualiza de 3 em 3 segundos para suavizar a barra
+            setInterval(updatePlayer, 3000); 
         }
     }
 
@@ -139,19 +145,21 @@
     }
 
     async function exchangeCode() {
-        const res = await fetch('https://accounts.spotify.com/api/token', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Authorization': 'Basic ' + btoa(CLIENT_ID + ':' + CLIENT_SECRET)
-            },
-            body: new URLSearchParams({ grant_type: 'authorization_code', code: authCode, redirect_uri: REDIRECT_URI })
-        });
-        const data = await res.json();
-        if (data.access_token) {
-            localStorage.setItem('spotify_token', data.access_token);
-            window.location.href = REDIRECT_URI;
-        }
+        try {
+            const res = await fetch('https://accounts.spotify.com/api/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Authorization': 'Basic ' + btoa(CLIENT_ID + ':' + CLIENT_SECRET)
+                },
+                body: new URLSearchParams({ grant_type: 'authorization_code', code: authCode, redirect_uri: REDIRECT_URI })
+            });
+            const data = await res.json();
+            if (data.access_token) {
+                localStorage.setItem('spotify_token', data.access_token);
+                window.location.href = REDIRECT_URI;
+            }
+        } catch(e) { console.error("Erro na troca de código", e); }
     }
 
     function showApp() {
@@ -166,6 +174,12 @@
                 headers: { 'Authorization': `Bearer ${accessToken}` }
             });
 
+            if (res.status === 401) {
+                localStorage.removeItem('spotify_token');
+                window.location.reload();
+                return;
+            }
+
             if (res.status === 200) {
                 const data = await res.json();
                 if (data && data.item) {
@@ -173,36 +187,69 @@
                     document.getElementById('current-name').innerText = data.item.name;
                     document.getElementById('current-artist').innerText = data.item.artists[0].name;
                     
-                    // Cálculo da Barra de Progresso
-                    const progress = data.progress_ms;
-                    const duration = data.item.duration_ms;
-                    const percent = (progress / duration) * 100;
+                    const percent = (data.progress_ms / data.item.duration_ms) * 100;
                     document.getElementById('progress').style.width = percent + '%';
                 }
             }
-        } catch (e) { console.error("Erro ao atualizar player", e); }
+        } catch (e) { console.error("Player inativo"); }
+    }
+
+    async function spotifyControl(action) {
+        const methods = { 'next': 'POST', 'previous': 'POST', 'pause': 'PUT', 'play': 'PUT' };
+        try {
+            await fetch(`https://api.spotify.com/v1/me/player/${action}`, {
+                method: methods[action],
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+            setTimeout(updatePlayer, 500); 
+        } catch (e) { console.error("Erro no controlo", e); }
     }
 
     async function buscar() {
         const q = document.getElementById('query').value;
-        if (q.length < 3) return;
-        const res = await fetch(`https://api.spotify.com/v1/search?q=${q}&type=track&limit=8`, {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
-        const data = await res.json();
-        let html = '';
-        data.tracks.items.forEach(t => {
-            html += `<div class="track-item"><img src="${t.album.images[0].url}" style="width:50px; border-radius:8px; margin-right:15px;"><div><b>${t.name}</b><br><span style="color:gray; font-size:0.8rem">${t.artists[0].name}</span></div><button class="btn-add" onclick="enqueue('${t.uri}', '${t.name.replace(/'/g, "")}')">PEDIR</button></div>`;
-        });
-        document.getElementById('results').innerHTML = html;
+        if (q.length < 3) { document.getElementById('results').innerHTML = ''; return; }
+        
+        try {
+            const res = await fetch(`https://api.spotify.com/v1/search?q=${q}&type=track&limit=8`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+            const data = await res.json();
+            let html = '';
+            data.tracks.items.forEach(t => {
+                html += `
+                    <div class="track-item">
+                        <img src="${t.album.images[0].url}" style="width:55px; border-radius:10px; margin-right:15px;">
+                        <div style="max-width: 60%;">
+                            <b style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${t.name}</b>
+                            <span style="color:gray; font-size:0.8rem">${t.artists[0].name}</span>
+                        </div>
+                        <button class="btn-add" onclick="enqueue('${t.uri}', '${t.name.replace(/'/g, "")}')">PEDIR</button>
+                    </div>`;
+            });
+            document.getElementById('results').innerHTML = html;
+        } catch(e) { console.error("Erro na busca", e); }
     }
 
     async function enqueue(uri, name) {
-        const res = await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${uri}`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
-        if (res.ok) alert("Música enviada para a fila do Portinha!");
+        const now = Date.now();
+        const waitTime = (lastRequestTime + (COOLDOWN_MINUTES * 60 * 1000)) - now;
+
+        if (waitTime > 0) {
+            const min = Math.ceil(waitTime / 1000 / 60);
+            alert(`O Portinha agradece a pica! Espera ${min} min para pedires outra.`);
+            return;
+        }
+
+        try {
+            const res = await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${uri}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+            if (res.ok) {
+                lastRequestTime = now;
+                alert("Música enviada para a fila do Portinha!");
+            }
+        } catch(e) { alert("Erro ao ligar ao Spotify do bar."); }
     }
 
     init();
