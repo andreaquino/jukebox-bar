@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bar Jukebox 2026</title>
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+    <style>
+        :root { --spotify-green: #1DB954; --dark: #121212; --card: #181818; }
+        body { background-color: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 500px; margin: auto; }
+        .search-box { width: 100%; padding: 15px; border-radius: 30px; border: none; background: #282828; color: white; margin-bottom: 20px; box-sizing: border-box; }
+        .track-card { display: flex; align-items: center; background: var(--card); padding: 10px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        .track-card:hover { background: #282828; border-left: 4px solid var(--spotify-green); }
+        .track-card img { width: 50px; height: 50px; margin-right: 15px; border-radius: 4px; }
+        .track-info b { display: block; font-size: 14px; }
+        .track-info span { font-size: 12px; color: #b3b3b3; }
+        .btn-login { background: var(--spotify-green); color: black; padding: 15px; border-radius: 30px; border: none; font-weight: bold; cursor: pointer; width: 100%; }
+        #status-bar { font-size: 12px; color: var(--spotify-green); margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="login-section">
+        <h2>🎵 Jukebox do Bar</h2>
+        <p>Conecta o Spotify do balcão para ativar o player.</p>
+        <button class="btn-login" onclick="loginSpotify()">ENTRAR COM SPOTIFY</button>
+    </div>
+
+    <div id="app-section" style="display:none;">
+        <div id="status-bar">● Ligado ao som do bar</div>
+        <input type="text" class="search-box" id="query" placeholder="Pesquisar música..." oninput="buscar()">
+        <div id="results"></div>
+    </div>
+</div>
+
+<script>
+    const CLIENT_ID = '3351b90e625048618d7f976a4f4b5a5a'; // <--- COLA AQUI O TEU ID
+    const REDIRECT_URI = 'https://vibe-jukebox.netlify.app/';
+    let token = new URLSearchParams(window.location.hash.replace('#','?')).get('access_token');
+
+    if (token) {
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('app-section').style.display = 'block';
+    }
+
+    function loginSpotify() {
+    const scopes = 'user-modify-playback-state user-read-playback-state streaming';
+    
+    // Vamos usar o fluxo de "Token" que o Spotify ainda permite se for bem chamado
+    const authUrl = new URL("https://accounts.spotify.com/authorize");
+    authUrl.searchParams.append("client_id", CLIENT_ID);
+    authUrl.searchParams.append("response_type", "token"); // Garante que pedimos o token direto
+    authUrl.searchParams.append("redirect_uri", REDIRECT_URI);
+    authUrl.searchParams.append("scope", scopes);
+    authUrl.searchParams.append("show_dialog", "true");
+
+    window.location.href = authUrl.toString();
+}
+
+    async function buscar() {
+        const q = document.getElementById('query').value;
+        if (q.length < 3) return;
+
+        const res = await fetch(`https://api.spotify.com/v1/search?q=${q}&type=track&limit=5`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        let html = '';
+        data.tracks.items.forEach(track => {
+            html += `
+                <div class="track-card" onclick="adicionarFila('${track.uri}', '${track.name}')">
+                    <img src="${track.album.images[0].url}">
+                    <div class="track-info">
+                        <b>${track.name}</b>
+                        <span>${track.artists[0].name}</span>
+                    </div>
+                </div>`;
+        });
+        document.getElementById('results').innerHTML = html;
+    }
+
+    async function adicionarFila(uri, nome) {
+        const res = await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${uri}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+            alert(`✅ "${nome}" adicionada à fila do bar!`);
+            document.getElementById('query').value = '';
+            document.getElementById('results').innerHTML = '';
+        } else {
+            alert('Erro: Certifica-te que o Spotify está aberto e a tocar no bar!');
+        }
+    }
+</script>
+</body>
+</html>
