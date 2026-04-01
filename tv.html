@@ -3,72 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PORTINHA JUKEBOX</title>
+    <title>Portinha - TV Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background-color: #000; color: white; overflow: hidden; font-family: 'Inter', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+        body { 
+            background-color: #000; 
+            color: white; 
+            overflow: hidden; 
+            font-family: 'Inter', sans-serif; 
+        }
         
         #bg-blur {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-size: cover; background-position: center;
-            filter: blur(80px) brightness(0.3); transform: scale(1.2);
+            filter: blur(100px) brightness(0.35); transform: scale(1.2);
             z-index: -1; transition: background-image 2s ease-in-out;
         }
 
-        .glass { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(30px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        
-        /* --- CONFIGURAÇÃO DA COR DA BARRA --- */
-        .progress-smooth { transition: width 1s linear; }
-        
-        .glow-bar { 
-            background-color: #ffffff; /* Cor da barra: Branco (Estilo Spotify TV) */
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(0, 255, 255, 0.4); 
+        .glass-panel { 
+            background: rgba(0, 0, 0, 0.25); 
+            backdrop-filter: blur(40px); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
         }
-        /* DICA: Para mudar para Ciano Neon, troque background-color para #00ffff */
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-song { animation: fadeIn 1s ease-out forwards; }
+        /* BARRA ESTILO SPOTIFY DASHBOARD */
+        .progress-container {
+            background: rgba(255, 255, 255, 0.15);
+            height: 10px;
+            border-radius: 99px;
+            position: relative;
+        }
+
+        .progress-fill {
+            background: #ffffff; /* Branco sólido conforme imagem de referência */
+            height: 100%;
+            border-radius: 99px;
+            transition: width 1s linear;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-content { animation: fadeInUp 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
     </style>
 </head>
 <body class="h-screen flex flex-col p-16 relative">
 
     <div id="bg-blur"></div>
 
-    <div class="flex-1 flex items-end gap-12 mb-20">
+    <div class="flex-1 flex items-center gap-16 mb-24 animate-content">
         
-        <div class="flex flex-col gap-8 flex-[2.5] animate-song">
-            <div class="flex items-center gap-12">
-                <img id="tv-cover" src="" class="w-64 h-64 md:w-96 md:h-96 rounded-3xl shadow-[0_30px_80px_rgba(0,0,0,0.9)] border border-white/20">
-                <div class="overflow-hidden">
-                    <h1 id="tv-title" class="text-8xl font-black tracking-tighter mb-4 truncate leading-tight">...</h1>
-                    <p id="tv-artist" class="text-5xl text-white/70 font-light truncate italic">A carregar bar</p>
-                    <div id="tv-suggester-box" class="hidden mt-8 inline-flex items-center gap-3 px-8 py-3 glass rounded-3xl border-l-8 border-l-neonPink">
-                        <span class="text-2xl font-bold tracking-widest uppercase text-white/90">Sugestão de: <span id="tv-suggester" class="text-neonCyan">---</span></span>
-                    </div>
-                </div>
+        <div class="shrink-0">
+            <img id="tv-cover" src="" class="w-[450px] h-[450px] md:w-[550px] md:h-[550px] rounded-[32px] shadow-[0_40px_100px_rgba(0,0,0,0.8)] border border-white/10 object-cover transition-all duration-1000">
+        </div>
+
+        <div class="flex-1 flex flex-col justify-center overflow-hidden">
+            <h1 id="tv-title" class="text-7xl md:text-8xl font-[900] tracking-tighter leading-[1.1] mb-6 line-clamp-2">...</h1>
+            <p id="tv-artist" class="text-4xl md:text-5xl text-white/60 font-medium mb-10 truncate italic">Carregando Jukebox</p>
+            
+            <div id="tv-suggester-box" class="hidden inline-flex items-center gap-4 px-8 py-3 glass-panel rounded-2xl w-fit">
+                <i data-lucide="user" class="text-white/40 w-6 h-6"></i>
+                <span class="text-xl font-bold tracking-widest uppercase text-white/80">PEDIDO DE: <span id="tv-suggester" class="text-white">---</span></span>
             </div>
         </div>
 
-        <div class="flex-1 glass rounded-[45px] p-10 max-h-[600px] flex flex-col shadow-2xl">
-            <div class="flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
-                <i data-lucide="list-music" class="text-neonPink w-10 h-10"></i>
-                <h2 class="text-3xl font-black uppercase tracking-widest text-white/80">A seguir</h2>
+        <div class="w-96 glass-panel rounded-[40px] p-10 h-full max-h-[650px] flex flex-col">
+            <div class="flex items-center gap-4 mb-10 border-b border-white/10 pb-6">
+                <i data-lucide="list-music" class="text-white/40 w-8 h-8"></i>
+                <h2 class="text-xl font-black uppercase tracking-[0.2em] text-white/60">A SEGUIR</h2>
             </div>
-            <div id="tv-queue-list" class="flex flex-col gap-6 overflow-y-auto"></div>
+            <div id="tv-queue-list" class="flex flex-col gap-8 overflow-y-auto">
+                </div>
         </div>
     </div>
 
-    <div class="w-full max-w-[95%] mx-auto">
-        <div class="flex justify-between text-3xl font-mono text-white/50 mb-6 px-4">
-            <span id="tv-current-time">0:00</span>
-            <span id="tv-total-time">0:00</span>
+    <div class="w-full max-w-[95%] mx-auto mt-auto animate-content" style="animation-delay: 0.3s;">
+        <div class="flex justify-between items-end mb-6 px-2">
+            <span id="tv-current-time" class="text-3xl font-bold font-mono opacity-40">0:00</span>
+            <span id="tv-total-time" class="text-3xl font-bold font-mono opacity-40">0:00</span>
         </div>
-        
-        <div class="w-full bg-white/20 h-6 rounded-full overflow-hidden border border-white/10 backdrop-blur-md relative">
-            <div id="tv-progress" class="h-full progress-smooth glow-bar relative z-10" style="width: 0%"></div>
+        <div class="progress-container">
+            <div id="tv-progress" class="progress-fill" style="width: 0%"></div>
         </div>
+    </div>
+
+    <div class="absolute top-16 right-16 opacity-20">
+        <h2 class="text-3xl font-black italic tracking-tighter">PORTINHA</h2>
     </div>
 
     <script>
@@ -100,7 +127,6 @@
         }
 
         function updateTVUI(data) {
-            // Sincroniza o relógio interno com o Admin
             localProgressMs = data.progress_ms;
             durationMs = data.duration_ms;
 
@@ -124,10 +150,17 @@
             const { data } = await supabaseClient.from('queue').select('*').eq('status', 'pending').order('votes', { ascending: false }).limit(5);
             const container = document.getElementById('tv-queue-list');
             container.innerHTML = "";
+
             (data || []).forEach(song => {
                 const div = document.createElement('div');
-                div.className = "flex items-center gap-6 bg-white/5 p-5 rounded-[30px] border border-white/5 animate-song";
-                div.innerHTML = `<img src="${song.cover_url}" class="w-20 h-20 rounded-2xl shadow-xl"><div class="flex-1 overflow-hidden"><p class="text-2xl font-bold text-white truncate">${song.title}</p><p class="text-lg text-neonCyan uppercase font-mono tracking-widest">${song.user_name}</p></div>`;
+                div.className = "flex items-center gap-6 opacity-80";
+                div.innerHTML = `
+                    <img src="${song.cover_url}" class="w-20 h-20 rounded-2xl object-cover shadow-lg">
+                    <div class="flex-1 overflow-hidden">
+                        <p class="text-2xl font-bold text-white truncate mb-1">${song.title}</p>
+                        <p class="text-sm text-white/40 uppercase font-bold tracking-widest">${song.user_name}</p>
+                    </div>
+                `;
                 container.appendChild(div);
             });
         }
