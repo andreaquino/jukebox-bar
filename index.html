@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon </title>
+    <title>Neon Jukebox PRO - Admin Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -27,11 +27,11 @@
             <h1 class="text-4xl font-black neon-text-pink italic tracking-tighter">NEON JUKEBOX</h1>
             <div class="flex items-center gap-2 mt-1">
                 <span id="status-dot" class="w-2 h-2 rounded-full bg-red-500"></span>
-                <p id="connection-status" class="text-[10px] text-gray-500 uppercase font-bold tracking-widest font-mono">Status: Offline</p>
+                <p id="connection-status" class="text-[10px] text-gray-500 uppercase font-bold tracking-widest font-mono italic">Status: Offline</p>
             </div>
         </div>
         <div class="flex gap-2">
-            <button id="spotifyLoginBtn" onclick="loginSpotify()" class="px-4 py-2 bg-[#1DB954] text-black text-xs font-bold rounded-full hidden">LOGAR SPOTIFY</button>
+            <button id="spotifyLoginBtn" onclick="loginSpotify()" class="px-4 py-2 bg-[#1DB954] text-black text-xs font-bold rounded-full hover:scale-105 transition-all hidden">LOGAR SPOTIFY</button>
             <button onclick="toggleMode()" class="px-4 py-2 border border-neonCyan text-neonCyan text-xs rounded-full">ADMIN / TV</button>
         </div>
     </header>
@@ -40,16 +40,16 @@
         <div class="md:col-span-2 flex flex-col gap-6">
             <section id="player-card" class="bg-darkCard rounded-3xl p-8 neon-border-cyan relative overflow-hidden transition-all duration-500">
                 <div class="flex gap-6 items-center z-10 relative">
-                    <img id="np-cover" src="https://via.placeholder.com/300?text=Neon+Bar" class="w-32 h-32 md:w-48 md:h-48 rounded-2xl shadow-2xl transition-all">
+                    <img id="np-cover" src="https://via.placeholder.com/300?text=Neon+Bar" class="w-32 h-32 md:w-48 md:h-48 rounded-2xl shadow-2xl">
                     <div class="flex-1 overflow-hidden">
                         <span class="text-neonCyan text-xs font-bold uppercase tracking-widest">A tocar agora</span>
-                        <h3 id="np-title" class="text-3xl md:text-5xl font-bold text-white mt-2 truncate">Jukebox Online</h3>
-                        <p id="np-artist" class="text-xl text-gray-400 truncate">Inicia o som no PC...</p>
+                        <h3 id="np-title" class="text-3xl md:text-5xl font-bold text-white mt-2 truncate">Ponto de Controlo</h3>
+                        <p id="np-artist" class="text-xl text-gray-400 truncate">Entra no Admin (1234)</p>
                         <p id="np-suggester" class="text-sm text-pink-500 mt-4 font-mono font-bold truncate"></p>
                     </div>
                 </div>
                 <div class="w-full bg-black/50 h-3 rounded-full mt-8 relative overflow-hidden border border-gray-800">
-                    <div id="progress-bar" class="bg-gradient-to-r from-neonCyan to-neonPink h-full rounded-full progress-smooth shadow-[0_0_10px_#00ffff]" style="width: 0%"></div>
+                    <div id="progress-bar" class="bg-gradient-to-r from-neonCyan to-neonPink h-full rounded-full progress-smooth" style="width: 0%"></div>
                 </div>
                 <div id="admin-controls" class="hidden mt-8 flex justify-between items-center border-t border-gray-800 pt-6">
                     <label class="relative inline-flex items-center cursor-pointer">
@@ -57,14 +57,10 @@
                         <div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1DB954]"></div>
                         <span class="ml-3 text-xs font-bold text-gray-400 uppercase tracking-tighter">Modo Automático</span>
                     </label>
-                    <button onclick="forcePlayNext()" class="bg-white text-black px-6 py-2 rounded-full font-black text-xs transition-all hover:scale-105 active:scale-95">FORÇAR PRÓXIMA</button>
+                    <button onclick="forcePlayNext()" class="bg-white text-black px-6 py-2 rounded-full font-black text-xs">FORÇAR PRÓXIMA</button>
                 </div>
             </section>
-            <section id="search-section" class="bg-gray-900/50 rounded-3xl p-6 border border-gray-800">
-                <input type="text" id="searchInput" onkeypress="if(event.key==='Enter') searchSpotify()" placeholder="Pede a tua música..." class="w-full bg-black border border-gray-700 rounded-2xl px-6 py-4 text-white focus:border-neonPink outline-none">
-                <div id="search-results" class="mt-4 grid grid-cols-1 gap-2"></div>
-            </section>
-        </div>
+            </div>
         <div class="md:col-span-1">
             <h2 class="text-xl font-bold text-white mb-6 flex items-center gap-2"><i data-lucide="list-music" class="text-neonPink w-5 h-5"></i> FILA</h2>
             <div id="queue-list" class="flex flex-col gap-4"></div>
@@ -78,12 +74,12 @@
 
         const spotifyClientId = '3351b90e625048618d7f976a4f4b5a5a';
         let spotifyAccessToken = localStorage.getItem('spotify_token');
-        let autoMode = false; let lastInjectedUri = null; let isAdmin = false;
-        const MY_ID = localStorage.getItem('jukebox_user_id') || 'u_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('jukebox_user_id', MY_ID);
+        let isAdmin = false;
+        let lastInjectedUri = null;
+        let autoMode = false;
         const redirectUri = window.location.href.split('?')[0].split('#')[0];
 
-        // --- SISTEMA PKCE S256 CORRIGIDO ---
+        // --- SISTEMA DE LOGIN ---
         async function generateCodeChallenge(verifier) {
             const encoder = new TextEncoder();
             const data = encoder.encode(verifier);
@@ -99,6 +95,13 @@
             window.location.href = `https://accounts.spotify.com/authorize?client_id=${spotifyClientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&code_challenge_method=S256&code_challenge=${challenge}&show_dialog=true`;
         }
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        if (code) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            exchangeCodeForToken(code);
+        }
+
         async function exchangeCodeForToken(authCode) {
             const verifier = localStorage.getItem('code_verifier');
             const params = new URLSearchParams({ client_id: spotifyClientId, grant_type: 'authorization_code', code: authCode, redirect_uri: redirectUri, code_verifier: verifier });
@@ -107,52 +110,52 @@
             if (data.access_token) {
                 spotifyAccessToken = data.access_token;
                 localStorage.setItem('spotify_token', spotifyAccessToken);
-                isAdmin = true;
-                document.getElementById('admin-controls').classList.remove('hidden');
-                checkSpotifyStatus();
+                alert("Spotify Conectado! Ativa o modo Admin agora.");
+                location.reload();
             }
         }
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        if (code) { window.history.replaceState({}, document.title, window.location.pathname); exchangeCodeForToken(code); } 
-        else if (spotifyAccessToken) { checkSpotifyStatus(); }
-
-        async function checkSpotifyStatus() {
-            if (!spotifyAccessToken) return;
-            const res = await fetch("https://api.spotify.com/v1/me/player", { headers: { 'Authorization': 'Bearer ' + spotifyAccessToken } });
-            if (res.ok || res.status === 204) {
-                document.getElementById('connection-status').innerText = "Admin Ligado";
-                document.getElementById('status-dot').classList.replace('bg-red-500', 'bg-green-500');
-            }
-        }
-
-        // --- BROADCAST (TRANSMISSÃO) ---
+        // --- BROADCAST (O CÉREBRO) ---
         async function monitorPlayback() {
-            if (isAdmin && spotifyAccessToken) {
-                try {
-                    const res = await fetch("https://api.spotify.com/v1/me/player", { headers: { 'Authorization': 'Bearer ' + spotifyAccessToken } });
-                    if (res.status === 200) {
-                        const data = await res.json();
-                        await supabaseClient.from('playback_status').upsert({
-                            id: 1, title: data.item.name, artist: data.item.artists[0].name,
-                            cover_url: data.item.album.images[0].url, progress_ms: data.progress_ms,
-                            duration_ms: data.item.duration_ms, 
-                            user_name: (lastInjectedUri === data.item.uri) ? localStorage.getItem('last_suggester') : "Spotify"
-                        });
-                        if (autoMode) {
-                            const timeLeft = data.item.duration_ms - data.progress_ms;
-                            if (timeLeft < 15000 && timeLeft > 5000) autoPlayNext();
-                        }
+            if (!spotifyAccessToken || !isAdmin) return;
+
+            try {
+                const res = await fetch("https://api.spotify.com/v1/me/player", {
+                    headers: { 'Authorization': 'Bearer ' + spotifyAccessToken }
+                });
+
+                if (res.status === 200) {
+                    const data = await res.json();
+                    
+                    // Envia para o Supabase
+                    const { error } = await supabaseClient.from('playback_status').upsert({
+                        id: 1,
+                        title: data.item.name,
+                        artist: data.item.artists[0].name,
+                        cover_url: data.item.album.images[0].url,
+                        progress_ms: data.progress_ms,
+                        duration_ms: data.item.duration_ms,
+                        user_name: (lastInjectedUri === data.item.uri) ? localStorage.getItem('last_suggester') : "Spotify"
+                    });
+
+                    if (error) console.error("Erro ao enviar para Supabase:", error);
+
+                    // Automação
+                    if (autoMode) {
+                        const timeLeft = data.item.duration_ms - data.progress_ms;
+                        if (timeLeft < 15000 && timeLeft > 5000) autoPlayNext();
                     }
-                } catch (e) { console.error("Broadcast Error:", e); }
-            }
+                } else if (res.status === 204) {
+                    console.log("Spotify está em pausa ou sem música ativa.");
+                }
+            } catch (e) { console.error("Monitor Error:", e); }
         }
 
         async function listenToBroadcast() {
-            const { data } = await supabaseClient.from('playback_status').select('*').eq('id', 1).single();
-            if (data) updateUI(data);
-            supabaseClient.channel('playback').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'playback_status' }, payload => updateUI(payload.new)).subscribe();
+            // Ouvinte para todos (PC e Telemóvel)
+            supabaseClient.channel('playback').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'playback_status' }, payload => {
+                updateUI(payload.new);
+            }).subscribe();
         }
 
         function updateUI(data) {
@@ -161,73 +164,28 @@
             document.getElementById('np-cover').src = data.cover_url;
             document.getElementById('np-suggester').innerText = data.user_name === "Spotify" ? "A tocar do Spotify" : "Sugestão: " + data.user_name;
             document.getElementById('progress-bar').style.width = (data.progress_ms / data.duration_ms * 100) + '%';
+            
             document.getElementById('status-dot').classList.replace('bg-red-500', 'bg-green-500');
             document.getElementById('connection-status').innerText = "Ligado ao Bar";
         }
 
-        // --- FILA E VOTOS ---
-        async function upvote(id) {
-            const { data: v } = await supabaseClient.from('votes').select('*').eq('song_id', id).eq('user_id', MY_ID);
-            if (v && v.length > 0) return alert("Já votaste!");
-            await supabaseClient.from('votes').insert([{ song_id: id, user_id: MY_ID }]);
-            const { data: s } = await supabaseClient.from('queue').select('votes').eq('id', id).single();
-            await supabaseClient.from('queue').update({ votes: (s.votes || 0) + 1 }).eq('id', id);
-        }
-
-        async function autoPlayNext() {
-            const { data } = await supabaseClient.from('queue').select('*').eq('status', 'pending').order('votes', { ascending: false }).limit(1);
-            if (data && data.length > 0) {
-                const song = data[0];
-                const res = await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(song.spotify_uri)}`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + spotifyAccessToken } });
-                if (res.ok) { lastInjectedUri = song.spotify_uri; localStorage.setItem('last_suggester', song.user_name); await supabaseClient.from('queue').update({ status: 'played' }).eq('id', song.id); }
+        function toggleMode() {
+            const pin = prompt("PIN de Admin:");
+            if (pin === "1234") {
+                isAdmin = true;
+                document.getElementById('admin-controls').classList.remove('hidden');
+                document.getElementById('spotifyLoginBtn').classList.remove('hidden');
+                alert("Modo Admin Ativado. O PC agora vai transmitir para os telemóveis.");
+            } else {
+                alert("PIN Errado.");
             }
         }
 
-        async function searchSpotify() {
-            const query = document.getElementById('searchInput').value; if (!query) return;
-            const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`, { headers: { 'Authorization': 'Bearer ' + (spotifyAccessToken || await getPublicToken()) } });
-            const data = await res.json();
-            const results = document.getElementById('search-results'); results.innerHTML = "";
-            data.tracks.items.forEach(song => {
-                const div = document.createElement('div'); div.className = "flex items-center gap-4 bg-black/40 p-3 rounded-2xl border border-gray-800 cursor-pointer";
-                div.onclick = () => addToQueue(song);
-                div.innerHTML = `<img src="${song.album.images[2].url}" class="w-10 h-10 rounded"><div><p class="text-sm font-bold text-white">${song.name}</p><p class="text-[10px] text-gray-500">${song.artists[0].name}</p></div>`;
-                results.appendChild(div);
-            });
-        }
-
-        async function getPublicToken() {
-            const res = await fetch('https://accounts.spotify.com/api/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + btoa(spotifyClientId + ':' + spotifySecret) }, body: 'grant_type=client_credentials' });
-            const data = await res.json(); return data.access_token;
-        }
-
-        async function addToQueue(song) {
-            const { data: count } = await supabaseClient.from('queue').select('id').eq('user_id', MY_ID).eq('status', 'pending');
-            if (count && count.length >= 3) return alert("Limite de 3 músicas!");
-            const name = prompt("Teu nome?");
-            await supabaseClient.from('queue').insert([{ title: song.name, artist: song.artists[0].name, cover_url: song.album.images[0].url, spotify_uri: song.uri, user_name: name || "Anónimo", user_id: MY_ID, status: 'pending', votes: 0 }]);
-            document.getElementById('search-results').innerHTML = ""; document.getElementById('searchInput').value = "";
-        }
-
-        async function fetchQueue() {
-            const { data } = await supabaseClient.from('queue').select('*').eq('status', 'pending').order('votes', { ascending: false });
-            const container = document.getElementById('queue-list'); container.innerHTML = "";
-            (data || []).forEach(song => {
-                const div = document.createElement('div'); div.className = "flex items-center gap-3 bg-gray-900/50 p-4 rounded-2xl border border-gray-800";
-                div.innerHTML = `<img src="${song.cover_url}" class="w-12 h-12 rounded-xl shadow-lg"><div class="flex-1 overflow-hidden"><p class="text-xs font-bold text-white truncate">${song.title}</p><p class="text-[9px] text-neonCyan uppercase">${song.user_name}</p></div><button onclick="upvote('${song.id}')" class="px-4 py-2 bg-gray-800 rounded-xl text-[10px] font-black text-white">❤️ ${song.votes}</button>`;
-                container.appendChild(div);
-            });
-            lucide.createIcons();
-        }
-
-        function toggleMode() { if (!isAdmin) { if (prompt("PIN:") !== "1234") return; } isAdmin = !isAdmin; document.getElementById('admin-controls').classList.toggle('hidden', !isAdmin); document.getElementById('spotifyLoginBtn').classList.toggle('hidden', !isAdmin || spotifyAccessToken); document.getElementById('search-section').classList.toggle('hidden', isAdmin); fetchQueue(); }
         function updateAutoMode() { autoMode = document.getElementById('autoModeToggle').checked; }
-        function forcePlayNext() { isProcessingAuto = false; autoPlayNext(); }
 
         setInterval(monitorPlayback, 2000); 
         listenToBroadcast();
-        supabaseClient.channel('q').on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, () => fetchQueue()).subscribe();
-        fetchQueue(); lucide.createIcons();
+        lucide.createIcons();
     </script>
 </body>
 </html>
