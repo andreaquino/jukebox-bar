@@ -12,12 +12,7 @@
             darkMode: 'class',
             theme: {
                 extend: {
-                    colors: {
-                        neonPink: '#ff00ff',
-                        neonCyan: '#00ffff',
-                        darkBg: '#0b0c10',
-                        darkCard: '#1f2833'
-                    }
+                    colors: { neonPink: '#ff00ff', neonCyan: '#00ffff', darkBg: '#0b0c10', darkCard: '#1f2833' }
                 }
             }
         }
@@ -27,19 +22,14 @@
         .neon-text-pink { text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff; color: #fff; }
         .neon-text-cyan { text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff; color: #fff; }
         .neon-border-cyan { box-shadow: 0 0 8px #00ffff; border: 1px solid #00ffff; }
-        .neon-btn-pink:hover { box-shadow: 0 0 12px #ff00ff; border-color: #ff00ff; color: white; }
         .progress-anim { width: 0%; transition: width 1s linear; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0b0c10; }
-        ::-webkit-scrollbar-thumb { background: #1f2833; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #00ffff; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4">
 
     <header class="w-full max-w-3xl flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold neon-text-pink tracking-wider">NEON JUKEBOX</h1>
-        <button id="modeToggle" onclick="toggleMode()" class="px-4 py-2 rounded-full border border-gray-500 text-sm neon-btn-pink transition-all">
+        <button id="modeToggle" onclick="toggleMode()" class="px-4 py-2 rounded-full border border-gray-500 text-sm hover:border-[#ff00ff] hover:text-[#ff00ff] transition-all">
             Alternar para Admin
         </button>
     </header>
@@ -70,8 +60,8 @@
                 <i data-lucide="search" class="w-5 h-5 text-neonCyan"></i> Pedir Música
             </h2>
             <div class="flex gap-2">
-                <input type="text" id="searchInput" placeholder="Busque por música ou artista..." class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neonCyan transition-colors">
-                <button onclick="searchMusic()" class="bg-neonCyan text-black font-bold px-6 py-3 rounded-lg hover:bg-white transition-colors">Buscar</button>
+                <input type="text" id="searchInput" placeholder="Digite a música ou artista..." class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neonCyan transition-colors">
+                <button onclick="searchRealMusic()" class="bg-neonCyan text-black font-bold px-6 py-3 rounded-lg hover:bg-white transition-colors">Buscar</button>
             </div>
             <div id="search-results" class="mt-4 flex flex-col gap-2 hidden"></div>
         </section>
@@ -90,9 +80,7 @@
     <script>
         lucide.createIcons();
 
-        // ==========================================
-        // CONFIGURAÇÃO DO SUPABASE
-        // ==========================================
+        // CHAVES DO SUPABASE
         const supabaseUrl = 'https://tgbyxogyrugjfggugigf.supabase.co';
         const supabaseKey = 'sb_publishable_MJFbecAQa8GZ4LdNb5ruew_9N9bg2ro';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -102,14 +90,6 @@
         let isPlaying = true;
         let progress = 0;
 
-        // Dados simulados para a busca
-        const mockDatabase = [
-            { id_api: 's1', title: 'Starboy', artist: 'The Weeknd', cover_url: 'https://i.scdn.co/image/ab67616d00001e024718e2b124f79258be7bc452' },
-            { id_api: 's2', title: 'Levitating', artist: 'Dua Lipa', cover_url: 'https://i.scdn.co/image/ab67616d00001e02bd22ee6ce006aa703b0a6324' },
-            { id_api: 's3', title: 'Bohemian Rhapsody', artist: 'Queen', cover_url: 'https://i.scdn.co/image/ab67616d00001e02e8b066f70c206551210d902b' },
-            { id_api: 's4', title: 'Midnight City', artist: 'M83', cover_url: 'https://i.scdn.co/image/ab67616d00001e022b3112a2df723e7fbfd7c041' }
-        ];
-
         function toggleMode() {
             isAdmin = !isAdmin;
             document.getElementById('modeToggle').innerText = isAdmin ? 'Alternar para Cliente' : 'Alternar para Admin';
@@ -118,23 +98,90 @@
             renderQueue();
         }
 
-        // Busca a fila no Supabase
-        async function fetchQueue() {
-            const { data, error } = await supabase
-                .from('queue')
-                .select('*')
-                .eq('status', 'pending')
-                .order('votes', { ascending: false });
-            
-            if (data) {
-                queue = data;
-                renderQueue();
-            } else if (error) {
-                console.error("Erro ao buscar fila:", error);
+        // BUSCA REAL USANDO A API GRATUITA DO iTUNES
+        async function searchRealMusic() {
+            const input = document.getElementById('searchInput').value;
+            if (!input) return;
+
+            const resultsContainer = document.getElementById('search-results');
+            resultsContainer.innerHTML = '<p class="text-neonCyan text-sm">Buscando na internet...</p>';
+            resultsContainer.classList.remove('hidden');
+
+            try {
+                // Chama a API da Apple (Não precisa de chave)
+                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(input)}&entity=song&limit=5`);
+                const data = await res.json();
+                
+                resultsContainer.innerHTML = '';
+
+                if(data.results.length === 0) {
+                    resultsContainer.innerHTML = '<p class="text-gray-400 text-sm">Nenhuma música encontrada.</p>';
+                    return;
+                }
+
+                data.results.forEach(song => {
+                    // Prepara os dados (substituindo aspas para evitar quebra no HTML)
+                    const title = song.trackName.replace(/'/g, "\\'");
+                    const artist = song.artistName.replace(/'/g, "\\'");
+                    const coverUrl = song.artworkUrl100;
+
+                    const resEl = document.createElement('div');
+                    resEl.className = "flex items-center gap-4 bg-gray-800 p-2 rounded-lg";
+                    resEl.innerHTML = `
+                        <img src="${coverUrl}" class="w-10 h-10 rounded">
+                        <div class="flex-1">
+                            <h4 class="text-white text-sm font-semibold">${song.trackName}</h4>
+                            <p class="text-xs text-gray-400">${song.artistName}</p>
+                        </div>
+                        <button onclick="addToQueueReal('${title}', '${artist}', '${coverUrl}')" class="p-2 text-neonPink hover:text-white transition-colors" title="Adicionar">
+                            <i data-lucide="plus-circle"></i>
+                        </button>
+                    `;
+                    resultsContainer.appendChild(resEl);
+                });
+                lucide.createIcons();
+            } catch (error) {
+                console.error(error);
+                resultsContainer.innerHTML = '<p class="text-red-500 text-sm">Erro ao buscar música.</p>';
             }
         }
 
-        // Renderiza a fila na tela
+        // ADICIONA NO BANCO DE DADOS
+        async function addToQueueReal(title, artist, coverUrl) {
+            const { error } = await supabase
+                .from('queue')
+                .insert([
+                    { title: title, artist: artist, cover_url: coverUrl, status: 'pending', votes: 0 }
+                ]);
+            
+            if(error) {
+                alert("Erro ao adicionar: " + error.message);
+                console.error(error);
+            } else {
+                document.getElementById('search-results').classList.add('hidden');
+                document.getElementById('searchInput').value = '';
+            }
+        }
+
+        // LÊ DO BANCO DE DADOS
+        async function fetchQueue() {
+            try {
+                const { data, error } = await supabase
+                    .from('queue')
+                    .select('*')
+                    .eq('status', 'pending')
+                    .order('votes', { ascending: false });
+                
+                if (error) throw error;
+                
+                queue = data;
+                renderQueue();
+            } catch (error) {
+                console.error("Erro no Banco:", error);
+                document.getElementById('queue-list').innerHTML = `<p class="text-red-500 text-sm">Erro: Verifique se o banco está rodando ou se a tabela existe.</p><p class="text-gray-500 text-xs">${error.message}</p>`;
+            }
+        }
+
         function renderQueue() {
             const queueContainer = document.getElementById('queue-list');
             queueContainer.innerHTML = '';
@@ -148,16 +195,9 @@
                 const songEl = document.createElement('div');
                 songEl.className = "flex items-center gap-4 bg-gray-900 p-3 rounded-xl border border-gray-800 hover:border-gray-600 transition-colors";
                 
-                let actionButton = '';
-                if (isAdmin) {
-                    actionButton = `<button onclick="removeFromQueue('${song.id}')" class="p-2 text-red-500 hover:bg-gray-800 rounded-lg" title="Remover"><i data-lucide="trash-2"></i></button>`;
-                } else {
-                    actionButton = `
-                        <button onclick="upvote('${song.id}')" class="flex flex-col items-center justify-center p-2 text-neonCyan hover:bg-gray-800 rounded-lg">
-                            <i data-lucide="chevron-up" class="w-6 h-6"></i>
-                            <span class="text-sm font-bold">${song.votes}</span>
-                        </button>`;
-                }
+                let actionButton = isAdmin ? 
+                    `<button onclick="removeFromQueue('${song.id}')" class="p-2 text-red-500 hover:bg-gray-800 rounded-lg"><i data-lucide="trash-2"></i></button>` : 
+                    `<button onclick="upvote('${song.id}')" class="flex flex-col items-center justify-center p-2 text-neonCyan hover:bg-gray-800 rounded-lg"><i data-lucide="chevron-up" class="w-6 h-6"></i><span class="text-sm font-bold">${song.votes}</span></button>`;
 
                 songEl.innerHTML = `
                     <img src="${song.cover_url}" class="w-12 h-12 rounded bg-black">
@@ -172,99 +212,37 @@
             lucide.createIcons();
         }
 
-        // Adiciona um voto (Supabase)
         async function upvote(id) {
             const song = queue.find(s => s.id === id);
             if (song) {
-                await supabase
-                    .from('queue')
-                    .update({ votes: song.votes + 1 })
-                    .eq('id', id);
+                await supabase.from('queue').update({ votes: song.votes + 1 }).eq('id', id);
             }
         }
 
-        // Remove/Deleta uma música da fila (Supabase)
         async function removeFromQueue(id) {
-            await supabase
-                .from('queue')
-                .delete()
-                .eq('id', id);
+            await supabase.from('queue').delete().eq('id', id);
         }
 
-        // Pula para a próxima música
         async function skipSong() {
             if (queue.length > 0) {
                 const nextSong = queue[0];
-                
                 document.getElementById('np-title').innerText = nextSong.title;
                 document.getElementById('np-artist').innerText = nextSong.artist;
                 document.getElementById('np-cover').src = nextSong.cover_url;
                 progress = 0;
                 
-                await supabase
-                    .from('queue')
-                    .update({ status: 'played' })
-                    .eq('id', nextSong.id);
+                await supabase.from('queue').update({ status: 'played' }).eq('id', nextSong.id);
             } else {
                 alert("A fila está vazia!");
             }
         }
 
-        // Busca Simulada (Mostra as opções para o cliente adicionar)
-        function searchMusic() {
-            const resultsContainer = document.getElementById('search-results');
-            resultsContainer.innerHTML = '';
-            resultsContainer.classList.remove('hidden');
-
-            mockDatabase.forEach(song => {
-                const resEl = document.createElement('div');
-                resEl.className = "flex items-center gap-4 bg-gray-800 p-2 rounded-lg";
-                resEl.innerHTML = `
-                    <img src="${song.cover_url}" class="w-10 h-10 rounded">
-                    <div class="flex-1">
-                        <h4 class="text-white text-sm font-semibold">${song.title}</h4>
-                        <p class="text-xs text-gray-400">${song.artist}</p>
-                    </div>
-                    <button onclick="addToQueue('${song.id_api}')" class="p-2 text-neonPink hover:text-white transition-colors" title="Adicionar">
-                        <i data-lucide="plus-circle"></i>
-                    </button>
-                `;
-                resultsContainer.appendChild(resEl);
-            });
-            lucide.createIcons();
-        }
-
-        // Insere a nova música no Supabase
-        async function addToQueue(apiId) {
-            const song = mockDatabase.find(s => s.id_api === apiId);
-            if (song) {
-                await supabase
-                    .from('queue')
-                    .insert([
-                        { title: song.title, artist: song.artist, cover_url: song.cover_url, status: 'pending', votes: 0 }
-                    ]);
-                
-                document.getElementById('search-results').classList.add('hidden');
-                document.getElementById('searchInput').value = '';
-            }
-        }
-
-        // ==========================================
-        // MAGIA DO TEMPO REAL (REALTIME)
-        // ==========================================
+        // TEMPO REAL
         supabase
             .channel('custom-all-channel')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'queue' },
-                (payload) => {
-                    console.log('Mudança detectada!', payload);
-                    fetchQueue(); 
-                }
-            )
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, (payload) => { fetchQueue(); })
             .subscribe();
 
-        // Animação da barra de progresso do player
         setInterval(() => {
             if (isPlaying && progress < 100) {
                 progress += 1;
@@ -272,7 +250,7 @@
             }
         }, 1000);
 
-        // Inicializa buscando as músicas ao carregar a página
+        // Inicia
         fetchQueue();
     </script>
 </body>
