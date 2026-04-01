@@ -4,19 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bar Jukebox 2026</title>
-    <script src="https://sdk.scdn.co/spotify-player.js"></script>
     <style>
         :root { --spotify-green: #1DB954; --dark: #121212; --card: #181818; }
-        body { background-color: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+        body { background-color: var(--dark); color: white; font-family: sans-serif; padding: 20px; text-align: center; }
         .container { max-width: 500px; margin: auto; }
-        .search-box { width: 100%; padding: 15px; border-radius: 30px; border: none; background: #282828; color: white; margin-bottom: 20px; box-sizing: border-box; }
-        .track-card { display: flex; align-items: center; background: var(--card); padding: 10px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
-        .track-card:hover { background: #282828; border-left: 4px solid var(--spotify-green); }
+        .search-box { width: 100%; padding: 15px; border-radius: 30px; border: none; background: #282828; color: white; margin-bottom: 20px; }
+        .track-card { display: flex; align-items: center; background: var(--card); padding: 10px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; text-align: left; }
         .track-card img { width: 50px; height: 50px; margin-right: 15px; border-radius: 4px; }
-        .track-info b { display: block; font-size: 14px; }
-        .track-info span { font-size: 12px; color: #b3b3b3; }
         .btn-login { background: var(--spotify-green); color: black; padding: 15px; border-radius: 30px; border: none; font-weight: bold; cursor: pointer; width: 100%; }
-        #status-bar { font-size: 12px; color: var(--spotify-green); margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -24,12 +19,10 @@
 <div class="container">
     <div id="login-section">
         <h2>🎵 Jukebox do Bar</h2>
-        <p>Conecta o Spotify do balcão para ativar o player.</p>
         <button class="btn-login" onclick="loginSpotify()">ENTRAR COM SPOTIFY</button>
     </div>
 
     <div id="app-section" style="display:none;">
-        <div id="status-bar">● Ligado ao som do bar</div>
         <input type="text" class="search-box" id="query" placeholder="Pesquisar música..." oninput="buscar()">
         <div id="results"></div>
     </div>
@@ -37,33 +30,31 @@
 
 <script>
     const CLIENT_ID = '3351b90e625048618d7f976a4f4b5a5a';
-    const CLIENT_SECRET = '8bc683ac2c3d4c9ba31041a857b62537'; // <-- NOVO
+    const CLIENT_SECRET = '8bc683ac2c3d4c9ba31041a857b62537'; // <-- Pega no Dashboard do Spotify!
     const REDIRECT_URI = 'https://andreaquino.github.io/jukebox-bar/';
 
-    // Lógica para capturar o código ou o token
+    // Verifica se voltámos do Spotify com um código ou se já temos um token salvo
     const urlParams = new URLSearchParams(window.location.search);
-    let code = urlParams.get('code');
-    let token = localStorage.getItem('spotify_token');
+    const authCode = urlParams.get('code');
+    let accessToken = localStorage.getItem('spotify_access_token');
 
-    if (code) {
-        // Se temos um código, vamos trocá-lo por um token
-        trocarCodigoPorToken(code);
-    }
-
-    if (token) {
-        document.getElementById('login-section').style.display = 'none';
-        document.getElementById('app-section').style.display = 'block';
+    async function inicializar() {
+        if (authCode) {
+            await trocarCodigoPorToken(authCode);
+        } else if (accessToken) {
+            mostrarApp();
+        }
     }
 
     function loginSpotify() {
-        const scopes = 'user-modify-playback-state user-read-playback-state streaming';
-        // MUDANÇA AQUI: response_type agora é CODE
+        const scopes = 'user-modify-playback-state user-read-playback-state';
+        // Aqui está a mudança: response_type=code
         const authUrl = `https://accounts.spotify.com/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scopes)}&show_dialog=true`;
         window.location.href = authUrl;
     }
 
     async function trocarCodigoPorToken(code) {
-        const res = await fetch('https://accounts.spotify.com/api/token', {
+        const response = await fetch('https://accounts.spotify.com/api/token', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -75,50 +66,45 @@
                 redirect_uri: REDIRECT_URI
             })
         });
-        const data = await res.json();
+        const data = await response.json();
         if (data.access_token) {
-            localStorage.setItem('spotify_token', data.access_token);
+            localStorage.setItem('spotify_access_token', data.access_token);
             window.location.href = REDIRECT_URI; // Limpa o código do URL
         }
+    }
+
+    function mostrarApp() {
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('app-section').style.display = 'block';
     }
 
     async function buscar() {
         const q = document.getElementById('query').value;
         if (q.length < 3) return;
-        const currentToken = localStorage.getItem('spotify_token');
-
         const res = await fetch(`https://api.spotify.com/v1/search?q=${q}&type=track&limit=5`, {
-            headers: { 'Authorization': `Bearer ${currentToken}` }
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('spotify_access_token')}` }
         });
         const data = await res.json();
-        
         let html = '';
         data.tracks.items.forEach(track => {
-            html += `
-                <div class="track-card" onclick="adicionarFila('${track.uri}', '${track.name}')">
-                    <img src="${track.album.images[0].url}">
-                    <div class="track-info">
-                        <b>${track.name}</b>
-                        <span>${track.artists[0].name}</span>
-                    </div>
-                </div>`;
+            html += `<div class="track-card" onclick="pedir('${track.uri}', '${track.name}')">
+                <img src="${track.album.images[0].url}">
+                <div><b>${track.name}</b><br><span>${track.artists[0].name}</span></div>
+            </div>`;
         });
         document.getElementById('results').innerHTML = html;
     }
 
-    async function adicionarFila(uri, nome) {
-        const currentToken = localStorage.getItem('spotify_token');
+    async function pedir(uri, nome) {
         const res = await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${uri}`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${currentToken}` }
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('spotify_access_token')}` }
         });
-
-        if (res.ok) {
-            alert(`✅ "${nome}" na fila!`);
-        } else {
-            alert('Erro: Abre o Spotify no bar primeiro!');
-        }
+        if (res.ok) alert(`✅ "${nome}" na fila!`);
+        else alert('Erro: Garante que o Spotify está a tocar no bar!');
     }
+
+    inicializar();
 </script>
 </body>
 </html>
