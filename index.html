@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Auto - Som & Bar</title>
+    <title>Neon Jukebox Auto - Som & Bar</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -45,8 +45,8 @@
                     <img id="np-cover" src="https://via.placeholder.com/300?text=Neon+Bar" class="w-32 h-32 md:w-48 md:h-48 rounded-2xl shadow-2xl transition-all">
                     <div class="flex-1 overflow-hidden">
                         <span class="text-neonCyan text-xs font-bold uppercase">A tocar agora</span>
-                        <h3 id="np-title" class="text-3xl md:text-5xl font-bold text-white mt-2 truncate">Pronto?</h3>
-                        <p id="np-artist" class="text-xl text-gray-400">Aguarda um pedido...</p>
+                        <h3 id="np-title" class="text-3xl md:text-5xl font-bold text-white mt-2 truncate">Pronto para a festa?</h3>
+                        <p id="np-artist" class="text-xl text-gray-400">Dê Play no seu Spotify...</p>
                         <p id="np-suggester" class="text-sm text-pink-500 mt-4 font-mono font-bold truncate"></p>
                     </div>
                 </div>
@@ -84,15 +84,23 @@
     </main>
 
     <script>
+        // URLs do Spotify blindadas contra corrupção
+        const SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize";
+        const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
+        const SPOTIFY_API_URL = "https://api.spotify.com/v1";
+
         const supabaseUrl = 'https://tgbyxogyrugjfggugigf.supabase.co';
         const supabaseKey = 'sb_publishable_MJFbecAQa8GZ4LdNb5ruew_9N9bg2ro';
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         const spotifyClientId = '3351b90e625048618d7f976a4f4b5a5a';
-        const spotifySecret = '8bc683ac2c3d4c9ba31041a857b62537'; // Apenas usado na busca pública agora
+        const spotifySecret = '8bc683ac2c3d4c9ba31041a857b62537'; 
         let spotifyAccessToken = localStorage.getItem('spotify_token');
         let autoMode = false;
+        
         let lastAddedUri = null; 
+        let currentSpotifyUri = null;
+        let isPreparingNext = false; // Bloqueia spam na automação
         let isAdmin = false;
 
         const redirectUri = window.location.href.split('?')[0].split('#')[0];
@@ -108,7 +116,6 @@
             checkSpotifyStatus();
         }
 
-        // FUNÇÕES DE SEGURANÇA PKCE (Para contornar o bloqueio do navegador)
         function generateRandomString(length) {
             let text = '';
             let possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -127,8 +134,7 @@
             const challenge = await generateCodeChallenge(verifier);
             const scope = 'user-modify-playback-state user-read-playback-state user-read-currently-playing';
             
-            // O show_dialog=true força a tela de confirmação do Spotify a aparecer!
-            window.location.href = `https://accounts.spotify.com/authorize?client_id=${spotifyClientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&code_challenge_method=S256&code_challenge=${challenge}&show_dialog=true`;
+            window.location.href = `${SPOTIFY_AUTH_URL}?client_id=${spotifyClientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&code_challenge_method=S256&code_challenge=${challenge}&show_dialog=true`;
         }
 
         async function exchangeCodeForToken(authCode) {
@@ -142,7 +148,7 @@
             });
 
             try {
-                const res = await fetch('https://accounts.spotify.com/api/token', {
+                const res = await fetch(SPOTIFY_TOKEN_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: body
@@ -159,19 +165,17 @@
                     document.getElementById('search-section').classList.add('hidden');
                     
                     checkSpotifyStatus();
-                } else {
-                    alert("Erro ao validar login com o Spotify. Tente novamente.");
-                    document.getElementById('spotifyLoginBtn').classList.remove('hidden');
                 }
             } catch (error) {
-                alert("Erro de segurança do navegador. Tente limpar a cache.");
+                console.error("Erro", error);
+                localStorage.removeItem('spotify_token');
             }
         }
 
         async function checkSpotifyStatus() {
             if (!spotifyAccessToken) return;
             try {
-                const res = await fetch('https://api.spotify.com/v1/me/player', {
+                const res = await fetch(SPOTIFY_API_URL + "/me/player", {
                     headers: { 'Authorization': 'Bearer ' + spotifyAccessToken }
                 });
                 
@@ -191,14 +195,93 @@
             }
         }
 
-        // BUSCA E ADIÇÃO
+        // =====================================
+        // MONITORIZADOR EM TEMPO REAL DO SPOTIFY
+        // =====================================
+        async function monitorPlayback() {
+            if (!spotifyAccessToken) return;
+
+            try {
+                const res = await fetch(SPOTIFY_API_URL + "/me/player", {
+                    headers: { 'Authorization': 'Bearer ' + spotifyAccessToken }
+                });
+
+                if (res.status === 200) {
+                    const data = await res.json();
+                    if (!data || !data.item) return;
+                    
+                    // 1. ATUALIZAR INTERFACE DA TV SEMPRE QUE A MÚSICA MUDAR NO SPOTIFY
+                    if (currentSpotifyUri !== data.item.uri) {
+                        currentSpotifyUri = data.item.uri;
+                        document.getElementById('np-title').innerText = data.item.name;
+                        document.getElementById('np-artist').innerText = data.item.artists.map(a => a.name).join(', ');
+                        document.getElementById('np-cover').src = data.item.album.images[0]?.url || 'https://via.placeholder.com/300';
+                        
+                        // Se for uma música qualquer (não pedida na jukebox), limpa a sugestão
+                        if (lastAddedUri !== currentSpotifyUri) {
+                            document.getElementById('np-suggester').innerText = "A tocar do Spotify";
+                        }
+                    }
+
+                    // 2. LÓGICA DO MODO AUTOMÁTICO
+                    if (autoMode) {
+                        const timeLeft = data.item.duration_ms - data.progress_ms;
+
+                        // Reseta o bloqueio quando a música estiver no meio
+                        if (timeLeft > 15000) {
+                            isPreparingNext = false;
+                        }
+
+                        // Se faltam 12 segundos e ainda não preparamos a próxima
+                        if (timeLeft <= 12000 && timeLeft > 0 && !isPreparingNext) {
+                            isPreparingNext = true; // Bloqueia para não mandar várias vezes
+                            autoPlayNext();
+                        }
+                    }
+                }
+            } catch (e) { console.error("Erro no monitor:", e); }
+        }
+
+        async function autoPlayNext() {
+            const { data } = await supabaseClient.from('queue').select('*').eq('status', 'pending').order('votes', { ascending: false }).limit(1);
+            
+            if (data && data.length > 0) {
+                const song = data[0];
+                const res = await fetch(`${SPOTIFY_API_URL}/me/player/queue?uri=${encodeURIComponent(song.spotify_uri)}`, {
+                    method: 'POST', headers: { 'Authorization': 'Bearer ' + spotifyAccessToken }
+                });
+
+                if (res.ok) {
+                    lastAddedUri = song.spotify_uri; 
+                    // Dá um 'spoiler' na TV do que vem aí
+                    document.getElementById('np-suggester').innerText = "Vem aí (Sugerido por: " + song.user_name + ")";
+                    await supabaseClient.from('queue').update({ status: 'played' }).eq('id', song.id);
+                }
+            }
+        }
+
+        function updateAutoMode() {
+            autoMode = document.getElementById('autoModeToggle').checked;
+            document.getElementById('auto-indicator').classList.toggle('hidden', !autoMode);
+            document.getElementById('auto-indicator').classList.toggle('flex', autoMode);
+            document.getElementById('player-card').classList.toggle('active-glow', autoMode);
+        }
+
+        async function forcePlayNext() {
+            autoPlayNext();
+            alert("Música mais votada enviada para a Fila do Spotify!");
+        }
+
+        // =====================================
+        // BUSCA E FILA (CLIENTES)
+        // =====================================
         async function searchSpotify() {
             const query = document.getElementById('searchInput').value;
             if (!query) return;
             const token = spotifyAccessToken || await getPublicToken();
             
             try {
-                const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`, {
+                const res = await fetch(`${SPOTIFY_API_URL}/search?q=${encodeURIComponent(query)}&type=track&limit=5`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 const data = await res.json();
@@ -218,13 +301,11 @@
                     results.appendChild(div);
                 });
                 lucide.createIcons();
-            } catch (error) {
-                console.error("Erro na busca:", error);
-            }
+            } catch (error) { console.error("Erro na busca:", error); }
         }
 
         async function getPublicToken() {
-            const res = await fetch('https://accounts.spotify.com/api/token', {
+            const res = await fetch(SPOTIFY_TOKEN_URL, {
                 method: 'POST', 
                 headers: { 
                     'Content-Type': 'application/x-www-form-urlencoded', 
@@ -251,67 +332,6 @@
             document.getElementById('searchInput').value = "";
         }
 
-        // LÓGICA DE AUTOMAÇÃO
-        function updateAutoMode() {
-            autoMode = document.getElementById('autoModeToggle').checked;
-            document.getElementById('auto-indicator').classList.toggle('hidden', !autoMode);
-            document.getElementById('auto-indicator').classList.toggle('flex', autoMode);
-            document.getElementById('player-card').classList.toggle('active-glow', autoMode);
-        }
-
-        async function monitorPlayback() {
-            if (!autoMode || !spotifyAccessToken) return;
-
-            try {
-                const res = await fetch('https://api.spotify.com/v1/me/player', {
-                    headers: { 'Authorization': 'Bearer ' + spotifyAccessToken }
-                });
-
-                if (res.status === 200) {
-                    const data = await res.json();
-                    if (!data || !data.item) return;
-                    
-                    const timeLeft = data.item.duration_ms - data.progress_ms;
-
-                    if (timeLeft <= 12000 && timeLeft > 0 && lastAddedUri !== data.item.uri) {
-                        console.log("A preparar a próxima música!");
-                        autoPlayNext();
-                    }
-                }
-            } catch (e) { console.error("Erro no monitor:", e); }
-        }
-
-        async function autoPlayNext() {
-            const { data } = await supabaseClient.from('queue').select('*').eq('status', 'pending').order('votes', { ascending: false }).limit(1);
-            
-            if (data && data.length > 0) {
-                const song = data[0];
-                const res = await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(song.spotify_uri)}`, {
-                    method: 'POST', headers: { 'Authorization': 'Bearer ' + spotifyAccessToken }
-                });
-
-                if (res.ok) {
-                    lastAddedUri = song.spotify_uri; 
-                    updateTVInterface(song);
-                    await supabaseClient.from('queue').update({ status: 'played' }).eq('id', song.id);
-                } else {
-                    alert("Aviso: Spotify não estava a tocar nenhuma música. Dê Play no aplicativo primeiro!");
-                }
-            }
-        }
-
-        function updateTVInterface(song) {
-            document.getElementById('np-title').innerText = song.title;
-            document.getElementById('np-artist').innerText = song.artist;
-            document.getElementById('np-cover').src = song.cover_url;
-            document.getElementById('np-suggester').innerText = "Vem aí (Sugerido por: " + song.user_name + ")";
-        }
-
-        async function forcePlayNext() {
-            autoPlayNext();
-        }
-
-        // FILA E MODOS
         async function fetchQueue() {
             const { data } = await supabaseClient.from('queue').select('*').eq('status', 'pending').order('votes', { ascending: false });
             const container = document.getElementById('queue-list'); container.innerHTML = "";
@@ -332,10 +352,7 @@
         function toggleMode() {
             if (!isAdmin) {
                 const senha = prompt("Acesso restrito. Digita o PIN de Admin:");
-                if (senha !== "1234") {
-                    alert("PIN incorreto!");
-                    return;
-                }
+                if (senha !== "1234") { alert("PIN incorreto!"); return; }
             }
             isAdmin = !isAdmin;
             document.getElementById('admin-controls').classList.toggle('hidden', !isAdmin);
@@ -350,6 +367,7 @@
             fetchQueue();
         }
 
+        // Executa o monitor do Spotify a cada 3 segundos
         setInterval(monitorPlayback, 3000); 
         supabaseClient.channel('q').on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, () => fetchQueue()).subscribe();
         
