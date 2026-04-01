@@ -6,136 +6,88 @@
     <title>Portinha - Jukebox</title>
     <style>
         :root { --neon-red: #FF0000; --dark-bg: #0a0a0a; }
-        body { background-color: var(--dark-bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; text-align: center; }
+        body { background-color: var(--dark-bg); color: white; font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; }
         .logo { color: var(--neon-red); font-weight: 900; text-transform: uppercase; font-size: 1.5rem; letter-spacing: 2px; }
         .btn-staff { background: var(--neon-red); border: none; color: white; padding: 15px 30px; border-radius: 50px; font-weight: bold; cursor: pointer; margin-top: 50px; }
-        .now-playing { border: 1px solid var(--neon-red); margin: 20px; padding: 20px; border-radius: 20px; background: #111; min-height: 150px; }
-        .album-art { width: 120px; height: 120px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #333; }
-        #admin-panel { display: none; justify-content: center; gap: 20px; margin-top: 20px; }
-        .search-box { width: 80%; padding: 15px; background: #222; border: 1px solid #333; border-radius: 50px; color: white; margin-top: 20px; }
+        .now-playing { border: 1px solid var(--neon-red); margin: 20px; padding: 20px; border-radius: 20px; background: #111; }
+        #admin-controls { display: none; margin-top: 20px; gap: 10px; justify-content: center; }
     </style>
 </head>
 <body>
 
     <div id="login-section" style="display:none;">
         <h1 class="logo" style="margin-top:100px; font-size: 3rem;">Portinha</h1>
-        <p>Acesso Restrito ao Staff</p>
-        <button class="btn-staff" onclick="window.loginSpotify()">ENTRAR COM SPOTIFY</button>
+        <button class="btn-staff" onclick="window.loginSpotify()">LOGIN STAFF (SPOTIFY)</button>
     </div>
 
     <div id="app-section">
-        <div style="padding:20px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="padding:20px; display:flex; justify-content:space-between;">
             <span class="logo">Portinha</span>
-            <span id="badge" style="border:1px solid #444; padding:5px 10px; border-radius:5px; font-size:0.7rem; color: #888;">CLIENTE</span>
+            <span id="badge" style="border:1px solid #444; padding:5px 10px; border-radius:5px; font-size:0.7rem;">CLIENTE</span>
         </div>
-
         <div class="now-playing">
-            <img src="" id="current-art" class="album-art" onerror="this.src='https://firebasestorage.googleapis.com/v0/b/jukebox-17937.appspot.com/o/default_album.png?alt=media&token=866085a8-20d0-4822-a9b0-95123d91341c'">
-            <b id="current-name" style="display:block; font-size:1.4rem;">Jukebox Offline</b>
-            <span id="current-artist" style="color: gray; font-size: 1rem;">À espera do staff...</span>
-            
-            <div id="admin-panel">
-                <button onclick="window.spotifyControl('previous')" style="background:none; border:none; color:white; font-size:2rem; cursor:pointer;">⏮</button>
-                <button class="btn-staff" style="margin-top:0; padding:10px 20px;" onclick="window.spotifyControl('play')">▶/II</button>
-                <button onclick="window.spotifyControl('next')" style="background:none; border:none; color:white; font-size:2rem; cursor:pointer;">⏭</button>
+            <img src="" id="current-art" style="width:100px; border-radius:10px; margin-bottom:10px;" onerror="this.src='https://firebasestorage.googleapis.com/v0/b/jukebox-17937.appspot.com/o/default_album.png?alt=media&token=866085a8-20d0-4822-a9b0-95123d91341c'">
+            <b id="current-name" style="display:block;">Carregando...</b>
+            <span id="current-artist" style="color:gray;">Aguarde...</span>
+            <div id="admin-controls">
+                <button onclick="window.spotifyControl('previous')">⏮</button>
+                <button onclick="window.spotifyControl('play')">▶/II</button>
+                <button onclick="window.spotifyControl('next')">⏭</button>
             </div>
         </div>
-
-        <input type="text" class="search-box" placeholder="Pedir uma música...">
     </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
 
-    // Teus dados do Firebase
     const firebaseConfig = {
-        apiKey: "AIzaSyAkdaAdfLHSVsWD5bsoLIsBZwsRTOpCOEg",
-        authDomain: "portinha-jukebox.firebaseapp.com",
-        databaseURL: "https://portinha-jukebox-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "portinha-jukebox",
-        storageBucket: "portinha-jukebox.firebasestorage.app",
-        appId: "1:618341176151:web:b5aa655b9b7496ca2fa412"
+        databaseURL: "https://portinha-jukebox-default-rtdb.europe-west1.firebasedatabase.app"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
     const CLIENT_ID = '3351b90e625048618d7f976a4f4b5a5a';
-    const REDIRECT_URI = 'https://andreaquino.github.io/jukebox-bar/';
-    const PROXY_URL = "https://script.google.com/macros/s/AKfycbze6WhezvXrZwKzJKbrl98ONvWBySpEIKvOFA0PoJfGtiPySfEluPQq_i5mTRSa1nCNuw/exec";
+    // MUDANÇA TOTAL: O Redirect URI agora aponta para a tua GOOGLE BRIDGE
+    const GOOGLE_BRIDGE_URL = "https://script.google.com/macros/s/AKfycbze6WhezvXrZwKzJKbrl98ONvWBySpEIKvOFA0PoJfGtiPySfEluPQq_i5mTRSa1nCNuw/exec";
 
     const urlParams = new URLSearchParams(window.location.search);
     const isAdmin = urlParams.get('admin') === 'true';
-    const code = urlParams.get('code');
     let accessToken = "";
 
     window.loginSpotify = () => {
         const scopes = 'user-modify-playback-state user-read-playback-state user-read-currently-playing';
-        window.location.href = `https://accounts.spotify.com/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(scopes)}&show_dialog=true`;
+        // Enviamos o Spotify para a Google, e a Google para o site. Adeus CORB!
+        window.location.href = `https://accounts.spotify.com/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(GOOGLE_BRIDGE_URL)}&scope=${encodeURIComponent(scopes)}`;
     };
 
-    // FASE 1: Troca do código pelo Token (Via Proxy Google)
-    if (isAdmin && code) {
-        fetch(PROXY_URL, {
-            method: 'POST',
-            mode: 'no-cors', // Evita erro CORB no browser
-            body: JSON.stringify({
-                grant_type: 'authorization_code',
-                code: code,
-                redirect_uri: REDIRECT_URI,
-                client_id: CLIENT_ID,
-                client_secret: '8bc683ac2c3d4c9ba31041a857b62537'
-            })
-        });
-
-        // Aguarda 3 segundos para a Google escrever no Firebase e limpa o URL
-        setTimeout(() => {
-            window.location.href = REDIRECT_URI + '?admin=true';
-        }, 3000);
-    }
-
-    // FASE 2: Escuta em tempo real do Firebase
     onValue(ref(db, 'auth/access_token'), (snap) => {
         accessToken = snap.val();
         if (accessToken) {
             if (isAdmin) {
-                document.getElementById('admin-panel').style.display = 'flex';
-                document.getElementById('badge').innerText = "MODO STAFF";
-                document.getElementById('badge').style.color = "red";
+                document.getElementById('admin-controls').style.display = 'flex';
+                document.getElementById('badge').innerText = "STAFF";
             }
             updatePlayer();
             setInterval(updatePlayer, 5000);
-        } else if (isAdmin && !code) {
-            // Se for admin e não tiver token, mostra login
+        } else if (isAdmin) {
             document.getElementById('login-section').style.display = 'block';
             document.getElementById('app-section').style.display = 'none';
         }
     });
 
     async function updatePlayer() {
-        if (!accessToken) return;
-        try {
-            const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
-                headers: { 'Authorization': 'Bearer ' + accessToken }
-            });
-            if (res.status === 200) {
-                const data = await res.json();
-                document.getElementById('current-art').src = data.item.album.images[0].url;
-                document.getElementById('current-name').innerText = data.item.name;
-                document.getElementById('current-artist').innerText = data.item.artists[0].name;
-            }
-        } catch (e) { console.log("Spotify desconectado ou erro de rede."); }
-    }
-
-    window.spotifyControl = (action) => {
-        const url = `https://api.spotify.com/v1/me/player/${action === 'play' ? 'play' : action}`;
-        const method = (action === 'next' || action === 'previous') ? 'POST' : 'PUT';
-        fetch(url, {
-            method: method,
+        const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
             headers: { 'Authorization': 'Bearer ' + accessToken }
         });
-    };
+        if (res.status === 200) {
+            const data = await res.json();
+            document.getElementById('current-art').src = data.item.album.images[0].url;
+            document.getElementById('current-name').innerText = data.item.name;
+            document.getElementById('current-artist').innerText = data.item.artists[0].name;
+        }
+    }
 </script>
 </body>
 </html>
