@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> PRO - Final</title>
+    <title>Neon Jukebox PRO - Som & Bar</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -18,14 +18,14 @@
         .neon-text-pink { text-shadow: 0 0 10px #ff00ff; color: #fff; }
         .neon-border-cyan { box-shadow: 0 0 15px #00ffff; border: 1px solid #00ffff; }
         .active-glow { box-shadow: 0 0 20px #1DB954; border-color: #1DB954; }
-        .progress-smooth { transition: width 0.5s linear; }
+        .progress-smooth { transition: width 0.8s linear; }
     </style>
 </head>
 <body class="min-h-screen p-4 flex flex-col items-center">
 
     <header class="w-full max-w-4xl flex justify-between items-center mb-8">
         <div>
-            <h1 class="text-4xl font-black neon-text-pink italic">NEON JUKEBOX</h1>
+            <h1 class="text-4xl font-black neon-text-pink italic tracking-tighter">NEON JUKEBOX</h1>
             <div class="flex items-center gap-2 mt-1">
                 <span id="status-dot" class="w-2 h-2 rounded-full bg-red-500"></span>
                 <p id="connection-status" class="text-[10px] text-gray-500 uppercase font-bold tracking-widest font-mono">Spotify: Desconectado</p>
@@ -35,7 +35,7 @@
             <button id="spotifyLoginBtn" onclick="loginSpotify()" class="px-4 py-2 bg-[#1DB954] text-black text-xs font-bold rounded-full hover:scale-105 transition-all hidden">
                 LOGAR SPOTIFY
             </button>
-            <button onclick="toggleMode()" class="px-4 py-2 border border-neonCyan text-neonCyan text-xs rounded-full">ADMIN / TV</button>
+            <button onclick="toggleMode()" class="px-4 py-2 border border-neonCyan text-neonCyan text-xs rounded-full hover:bg-neonCyan/10 transition-all">ADMIN / TV</button>
         </div>
     </header>
 
@@ -45,35 +45,35 @@
                 <div class="flex gap-6 items-center z-10 relative">
                     <img id="np-cover" src="https://via.placeholder.com/300?text=Neon+Bar" class="w-32 h-32 md:w-48 md:h-48 rounded-2xl shadow-2xl transition-all">
                     <div class="flex-1 overflow-hidden">
-                        <span class="text-neonCyan text-xs font-bold uppercase tracking-tighter">A tocar agora</span>
-                        <h3 id="np-title" class="text-3xl md:text-5xl font-bold text-white mt-2 truncate">Pronto?</h3>
-                        <p id="np-artist" class="text-xl text-gray-400 truncate">Dê Play no Spotify...</p>
+                        <span class="text-neonCyan text-xs font-bold uppercase tracking-widest">A tocar agora</span>
+                        <h3 id="np-title" class="text-3xl md:text-5xl font-bold text-white mt-2 truncate">Jukebox Online</h3>
+                        <p id="np-artist" class="text-xl text-gray-400 truncate">Pronto para a festa!</p>
                         <p id="np-suggester" class="text-sm text-pink-500 mt-4 font-mono font-bold truncate"></p>
                     </div>
                 </div>
 
-                <div class="w-full bg-black/50 h-3 rounded-full mt-8 relative overflow-hidden border border-gray-800">
+                <div class="w-full bg-black/50 h-3 rounded-full mt-8 relative overflow-hidden border border-gray-700">
                     <div id="progress-bar" class="bg-gradient-to-r from-neonCyan to-neonPink h-full rounded-full progress-smooth shadow-[0_0_10px_#00ffff]" style="width: 0%"></div>
                 </div>
 
-                <div id="auto-indicator" class="hidden mt-6 items-center gap-2 text-[10px] font-bold text-[#1DB954] animate-pulse">
-                    <i data-lucide="zap" class="w-3 h-3"></i> AUTOMAÇÃO LIGADA: MONITORIZANDO FILA
+                <div id="auto-indicator" class="hidden mt-6 items-center gap-2 text-[10px] font-bold text-[#1DB954] animate-pulse uppercase">
+                    <i data-lucide="zap" class="w-3 h-3"></i> Automação Ativa: Gerindo Som
                 </div>
 
-                <div id="admin-controls" class="hidden mt-8 flex justify-between items-center">
+                <div id="admin-controls" class="hidden mt-8 flex justify-between items-center border-t border-gray-800 pt-6">
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="autoModeToggle" class="sr-only peer" onchange="updateAutoMode()">
                         <div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1DB954]"></div>
                         <span class="ml-3 text-xs font-bold text-gray-400 uppercase">Modo Automático</span>
                     </label>
-                    <button onclick="forcePlayNext()" class="bg-white text-black px-6 py-2 rounded-full font-black text-xs flex items-center gap-2 hover:bg-neonCyan">
+                    <button onclick="forcePlayNext()" class="bg-white text-black px-6 py-2 rounded-full font-black text-xs flex items-center gap-2 hover:bg-neonCyan transition-all">
                         FORÇAR PRÓXIMA
                     </button>
                 </div>
             </section>
 
             <section id="search-section" class="bg-gray-900/50 rounded-3xl p-6 border border-gray-800">
-                <input type="text" id="searchInput" onkeypress="if(event.key==='Enter') searchSpotify()" placeholder="O que queres ouvir no bar?" class="w-full bg-black border border-gray-700 rounded-2xl px-6 py-4 text-white focus:border-neonPink outline-none">
+                <input type="text" id="searchInput" onkeypress="if(event.key==='Enter') searchSpotify()" placeholder="Pede a tua música..." class="w-full bg-black border border-gray-700 rounded-2xl px-6 py-4 text-white focus:border-neonPink outline-none">
                 <div id="search-results" class="mt-4 grid grid-cols-1 gap-2"></div>
             </section>
         </div>
@@ -87,17 +87,18 @@
     </main>
 
     <script>
-        const SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize";
-        const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
-        const SPOTIFY_API_URL = "https://api.spotify.com/v1";
-
         const supabaseUrl = 'https://tgbyxogyrugjfggugigf.supabase.co';
         const supabaseKey = 'sb_publishable_MJFbecAQa8GZ4LdNb5ruew_9N9bg2ro';
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         const spotifyClientId = '3351b90e625048618d7f976a4f4b5a5a';
-        const spotifySecret = '8bc683ac2c3d4c9ba31041a857b62537'; 
+        const spotifySecret = '8bc683ac2c3d4c9ba31041a857b62537';
         let spotifyAccessToken = localStorage.getItem('spotify_token');
+
+        const SP_API = "https://api.spotify.com/v1";
+        const SP_AUTH = "https://accounts.spotify.com/authorize";
+        const SP_TOKEN = "https://accounts.spotify.com/api/token";
+
         let autoMode = false;
         let lastInjectedUri = null; 
         let currentSpotifyUri = null;
@@ -109,20 +110,60 @@
 
         const redirectUri = window.location.href.split('?')[0].split('#')[0];
 
-        // LOGAR E TRATAR CODE
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        if (code) {
-            window.history.replaceState({}, document.title, window.location.pathname);
-            exchangeCodeForToken(code);
-        } else if (spotifyAccessToken) {
-            checkSpotifyStatus();
+        // --- SISTEMA PKCE S256 CORRIGIDO ---
+        function generateRandomString(length) {
+            const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            const values = crypto.getRandomValues(new Uint8Array(length));
+            return Array.from(values).map((x) => possible[x % possible.length]).join('');
+        }
+
+        async function sha256(plain) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(plain);
+            return window.crypto.subtle.digest('SHA-256', data);
+        }
+
+        function base64urlencode(a) {
+            return btoa(String.fromCharCode.apply(null, new Uint8Array(a)))
+                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        async function loginSpotify() {
+            const codeVerifier = generateRandomString(128);
+            const hashed = await sha256(codeVerifier);
+            const codeChallenge = base64urlencode(hashed);
+            
+            localStorage.setItem('code_verifier', codeVerifier);
+            
+            const scope = 'user-modify-playback-state user-read-playback-state user-read-currently-playing';
+            const params = new URLSearchParams({
+                client_id: spotifyClientId,
+                response_type: 'code',
+                redirect_uri: redirectUri,
+                scope: scope,
+                code_challenge_method: 'S256',
+                code_challenge: codeChallenge,
+                show_dialog: true
+            });
+
+            window.location.href = `${SP_AUTH}?${params.toString()}`;
         }
 
         async function exchangeCodeForToken(authCode) {
-            const verifier = localStorage.getItem('code_verifier');
-            const body = new URLSearchParams({ client_id: spotifyClientId, grant_type: 'authorization_code', code: authCode, redirect_uri: redirectUri, code_verifier: verifier });
-            const res = await fetch(SPOTIFY_TOKEN_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+            const codeVerifier = localStorage.getItem('code_verifier');
+            const params = new URLSearchParams({
+                client_id: spotifyClientId,
+                grant_type: 'authorization_code',
+                code: authCode,
+                redirect_uri: redirectUri,
+                code_verifier: codeVerifier,
+            });
+
+            const res = await fetch(SP_TOKEN, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params
+            });
             const data = await res.json();
             if (data.access_token) {
                 spotifyAccessToken = data.access_token;
@@ -133,39 +174,42 @@
             }
         }
 
-        function loginSpotify() {
-            const verifier = 'v_' + Math.random().toString(36).substr(2, 20);
-            localStorage.setItem('code_verifier', verifier);
-            // PKCE Simples para bar
-            const scope = 'user-modify-playback-state user-read-playback-state user-read-currently-playing';
-            window.location.href = `${SPOTIFY_AUTH_URL}?client_id=${spotifyClientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&code_challenge_method=plain&code_challenge=${verifier}&show_dialog=true`;
+        // --- VERIFICAÇÃO DE RETORNO ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        if (code) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            exchangeCodeForToken(code);
+        } else if (spotifyAccessToken) {
+            checkSpotifyStatus();
         }
 
         async function checkSpotifyStatus() {
-            const res = await fetch(SPOTIFY_API_URL + "/me/player", { headers: { 'Authorization': 'Bearer ' + spotifyAccessToken } });
-            if (res.ok || res.status === 204) {
-                document.getElementById('connection-status').innerText = "Spotify: Conectado (Controlo Ativo)";
-                document.getElementById('status-dot').classList.replace('bg-red-500', 'bg-green-500');
-            } else {
+            if (!spotifyAccessToken) return;
+            try {
+                const res = await fetch(SP_API + "/me/player", { headers: { 'Authorization': 'Bearer ' + spotifyAccessToken } });
+                if (res.ok || res.status === 204) {
+                    document.getElementById('connection-status').innerText = "Spotify: Conectado (Controlo Ativo)";
+                    document.getElementById('status-dot').classList.replace('bg-red-500', 'bg-green-500');
+                    if(isAdmin) document.getElementById('spotifyLoginBtn').classList.add('hidden');
+                } else { throw new Error(); }
+            } catch (e) {
                 localStorage.removeItem('spotify_token');
+                spotifyAccessToken = null;
+                document.getElementById('connection-status').innerText = "Spotify: Desconectado";
+                document.getElementById('status-dot').classList.replace('bg-green-500', 'bg-red-500');
             }
         }
 
-        // =====================================
-        // MONITORIZAÇÃO E BARRA DE PROGRESSO
-        // =====================================
         async function monitorPlayback() {
             if (!spotifyAccessToken) return;
             try {
-                const res = await fetch(SPOTIFY_API_URL + "/me/player", { headers: { 'Authorization': 'Bearer ' + spotifyAccessToken } });
+                const res = await fetch(SP_API + "/me/player", { headers: { 'Authorization': 'Bearer ' + spotifyAccessToken } });
                 if (res.status === 200) {
                     const data = await res.json();
-                    
-                    // ATUALIZA BARRA DE PROGRESSO
                     const percent = (data.progress_ms / data.item.duration_ms) * 100;
                     document.getElementById('progress-bar').style.width = percent + '%';
 
-                    // ATUALIZA TV
                     if (currentSpotifyUri !== data.item.uri) {
                         currentSpotifyUri = data.item.uri;
                         document.getElementById('np-title').innerText = data.item.name;
@@ -173,7 +217,6 @@
                         document.getElementById('np-cover').src = data.item.album.images[0].url;
                     }
 
-                    // AUTOMAÇÃO (15 segundos)
                     if (autoMode) {
                         const timeLeft = data.item.duration_ms - data.progress_ms;
                         if (timeLeft > 15000) isProcessingAuto = false;
@@ -183,81 +226,60 @@
                         }
                     }
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) { }
         }
 
         async function autoPlayNext() {
             const { data } = await supabaseClient.from('queue').select('*').eq('status', 'pending').order('votes', { ascending: false }).limit(1);
             if (data && data.length > 0) {
                 const song = data[0];
-                const res = await fetch(`${SPOTIFY_API_URL}/me/player/queue?uri=${encodeURIComponent(song.spotify_uri)}`, {
+                const res = await fetch(`${SP_API}/me/player/queue?uri=${encodeURIComponent(song.spotify_uri)}`, {
                     method: 'POST', headers: { 'Authorization': 'Bearer ' + spotifyAccessToken }
                 });
                 if (res.ok) {
                     lastInjectedUri = song.spotify_uri;
-                    document.getElementById('np-suggester').innerText = "Vem aí: Sugestão de " + song.user_name;
+                    document.getElementById('np-suggester').innerText = "Vem aí sugestão de: " + song.user_name;
                     await supabaseClient.from('queue').update({ status: 'played' }).eq('id', song.id);
                 }
             }
         }
 
-        // =====================================
-        // VOTO ÚNICO (ANTI-SPAM)
-        // =====================================
         async function upvote(id) {
-            // 1. Verificar se este user já votou nesta música na tabela 'votes'
-            const { data: alreadyVoted } = await supabaseClient
-                .from('votes')
-                .select('*')
-                .eq('song_id', id)
-                .eq('user_id', MY_ID);
-
-            if (alreadyVoted && alreadyVoted.length > 0) {
-                alert("Já votaste nesta música! Deixa os outros votarem também. 😉");
-                return;
-            }
-
-            // 2. Registar o voto na tabela de segurança
+            const { data: alreadyVoted } = await supabaseClient.from('votes').select('*').eq('song_id', id).eq('user_id', MY_ID);
+            if (alreadyVoted && alreadyVoted.length > 0) return alert("Já votaste nesta música!");
             await supabaseClient.from('votes').insert([{ song_id: id, user_id: MY_ID }]);
-
-            // 3. Atualizar o contador na fila
-            const { data: song } = await supabaseClient.from('queue').select('votes').eq('id', id).single();
-            await supabaseClient.from('queue').update({ votes: (song.votes || 0) + 1 }).eq('id', id);
+            const { data: currentSong } = await supabaseClient.from('queue').select('votes').eq('id', id).single();
+            await supabaseClient.from('queue').update({ votes: (currentSong.votes || 0) + 1 }).eq('id', id);
         }
 
-        // BUSCA E FILA (IGUAL)
         async function searchSpotify() {
             const query = document.getElementById('searchInput').value;
             if (!query) return;
-            const res = await fetch(`${SPOTIFY_API_URL}/search?q=${encodeURIComponent(query)}&type=track&limit=5`, {
-                headers: { 'Authorization': 'Bearer ' + (spotifyAccessToken || await getPublicToken()) }
-            });
+            const token = spotifyAccessToken || await getPublicToken();
+            const res = await fetch(`${SP_API}/search?q=${encodeURIComponent(query)}&type=track&limit=5`, { headers: { 'Authorization': 'Bearer ' + token } });
             const data = await res.json();
             const results = document.getElementById('search-results');
             results.innerHTML = "";
             data.tracks.items.forEach(song => {
                 const div = document.createElement('div');
-                div.className = "flex items-center gap-4 bg-black/40 p-3 rounded-2xl border border-gray-800 hover:border-neonPink cursor-pointer";
+                div.className = "flex items-center gap-4 bg-black/40 p-3 rounded-2xl border border-gray-800 hover:border-neonPink cursor-pointer transition-all";
                 div.onclick = () => addToQueue(song);
                 div.innerHTML = `<img src="${song.album.images[2].url}" class="w-10 h-10 rounded"><div><p class="text-sm font-bold text-white">${song.name}</p><p class="text-[10px] text-gray-500">${song.artists[0].name}</p></div>`;
                 results.appendChild(div);
             });
+            lucide.createIcons();
         }
 
         async function getPublicToken() {
-            const res = await fetch(SPOTIFY_TOKEN_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + btoa(spotifyClientId + ':' + spotifySecret) }, body: 'grant_type=client_credentials' });
+            const res = await fetch(SP_TOKEN, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + btoa(spotifyClientId + ':' + spotifySecret) }, body: 'grant_type=client_credentials' });
             const data = await res.json(); return data.access_token;
         }
 
         async function addToQueue(song) {
             const { data: count } = await supabaseClient.from('queue').select('id').eq('user_id', MY_ID).eq('status', 'pending');
-            if (count && count.length >= 3) return alert("Tens o limite de 3 músicas na fila!");
-
+            if (count && count.length >= 3) return alert("Máximo 3 músicas na fila!");
             const name = prompt("Teu nome?");
-            await supabaseClient.from('queue').insert([{
-                title: song.name, artist: song.artists[0].name, cover_url: song.album.images[0].url, 
-                spotify_uri: song.uri, user_name: name || "Anónimo", user_id: MY_ID, status: 'pending', votes: 0
-            }]);
+            await supabaseClient.from('queue').insert([{ title: song.name, artist: song.artists[0].name, cover_url: song.album.images[0].url, spotify_uri: song.uri, user_name: name || "Anónimo", user_id: MY_ID, status: 'pending', votes: 0 }]);
             document.getElementById('search-results').innerHTML = "";
             document.getElementById('searchInput').value = "";
         }
@@ -268,7 +290,7 @@
             (data || []).forEach(song => {
                 const div = document.createElement('div');
                 div.className = "flex items-center gap-3 bg-gray-900/50 p-4 rounded-2xl border border-gray-800";
-                div.innerHTML = `<img src="${song.cover_url}" class="w-10 h-10 rounded-lg shadow-lg"> <div class="flex-1 overflow-hidden"><p class="text-xs font-bold text-white truncate">${song.title}</p><p class="text-[9px] text-neonCyan font-mono">${song.user_name}</p></div> <button onclick="upvote('${song.id}')" class="px-4 py-2 bg-gray-800 rounded-xl text-[10px] font-black text-white hover:bg-neonPink">❤️ ${song.votes}</button>`;
+                div.innerHTML = `<img src="${song.cover_url}" class="w-12 h-12 rounded-xl shadow-lg"><div class="flex-1 overflow-hidden"><p class="text-xs font-bold text-white truncate">${song.title}</p><p class="text-[9px] text-neonCyan uppercase">${song.user_name}</p></div><button onclick="upvote('${song.id}')" class="px-4 py-2 bg-gray-800 rounded-xl text-[10px] font-black text-white hover:bg-neonPink">❤️ ${song.votes}</button>`;
                 container.appendChild(div);
             });
             lucide.createIcons();
@@ -285,13 +307,13 @@
 
         function updateAutoMode() {
             autoMode = document.getElementById('autoModeToggle').checked;
-            document.getElementById('auto-indicator').classList.toggle('hidden', !autoMode);
             document.getElementById('player-card').classList.toggle('active-glow', autoMode);
+            document.getElementById('auto-indicator').classList.toggle('hidden', !autoMode);
         }
 
         function forcePlayNext() { isProcessingAuto = false; autoPlayNext(); }
 
-        setInterval(monitorPlayback, 1000); // Atualiza a cada 1 segundo para a barra ser suave
+        setInterval(monitorPlayback, 1000); 
         supabaseClient.channel('q').on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, () => fetchQueue()).subscribe();
         fetchQueue();
         lucide.createIcons();
