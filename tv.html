@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Jukebox - TV Display PRO</title>
+    <title>PORTINHA JUKEBOX</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -17,10 +17,17 @@
             z-index: -1; transition: background-image 2s ease-in-out;
         }
 
-        .glass { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.15); }
-        .progress-smooth { transition: width 1s linear; }
-        .glow-bar { box-shadow: 0 0 25px rgba(0, 255, 255, 0.7), 0 0 10px rgba(255, 0, 255, 0.5); }
+        .glass { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(30px); border: 1px solid rgba(255, 255, 255, 0.1); }
         
+        /* --- CONFIGURAÇÃO DA COR DA BARRA --- */
+        .progress-smooth { transition: width 1s linear; }
+        
+        .glow-bar { 
+            background-color: #ffffff; /* Cor da barra: Branco (Estilo Spotify TV) */
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(0, 255, 255, 0.4); 
+        }
+        /* DICA: Para mudar para Ciano Neon, troque background-color para #00ffff */
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         .animate-song { animation: fadeIn 1s ease-out forwards; }
     </style>
@@ -33,42 +40,35 @@
         
         <div class="flex flex-col gap-8 flex-[2.5] animate-song">
             <div class="flex items-center gap-12">
-                <img id="tv-cover" src="https://via.placeholder.com/600" class="w-64 h-64 md:w-80 md:h-80 rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] border border-white/20 transition-all duration-1000">
+                <img id="tv-cover" src="" class="w-64 h-64 md:w-96 md:h-96 rounded-3xl shadow-[0_30px_80px_rgba(0,0,0,0.9)] border border-white/20">
                 <div class="overflow-hidden">
-                    <h1 id="tv-title" class="text-8xl font-black tracking-tighter mb-4 truncate leading-tight">Carregando...</h1>
-                    <p id="tv-artist" class="text-5xl text-white/60 font-light truncate italic">Aguardando sinal do Bar</p>
-                    <div id="tv-suggester-box" class="hidden mt-8 inline-flex items-center gap-3 px-6 py-2 glass rounded-2xl border-l-4 border-l-neonPink">
-                        <i data-lucide="music" class="w-5 h-5 text-neonPink"></i>
-                        <span class="text-xl font-bold tracking-widest uppercase text-white/90">Sugestão de: <span id="tv-suggester" class="text-neonCyan">---</span></span>
+                    <h1 id="tv-title" class="text-8xl font-black tracking-tighter mb-4 truncate leading-tight">...</h1>
+                    <p id="tv-artist" class="text-5xl text-white/70 font-light truncate italic">A carregar bar</p>
+                    <div id="tv-suggester-box" class="hidden mt-8 inline-flex items-center gap-3 px-8 py-3 glass rounded-3xl border-l-8 border-l-neonPink">
+                        <span class="text-2xl font-bold tracking-widest uppercase text-white/90">Sugestão de: <span id="tv-suggester" class="text-neonCyan">---</span></span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="flex-1 glass rounded-[40px] p-10 max-h-[550px] flex flex-col shadow-2xl border-white/10">
+        <div class="flex-1 glass rounded-[45px] p-10 max-h-[600px] flex flex-col shadow-2xl">
             <div class="flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
-                <i data-lucide="list-music" class="text-neonPink w-8 h-8"></i>
-                <h2 class="text-2xl font-black uppercase tracking-widest text-white/80">A seguir</h2>
+                <i data-lucide="list-music" class="text-neonPink w-10 h-10"></i>
+                <h2 class="text-3xl font-black uppercase tracking-widest text-white/80">A seguir</h2>
             </div>
-            <div id="tv-queue-list" class="flex flex-col gap-6 overflow-y-auto pr-2">
-                </div>
+            <div id="tv-queue-list" class="flex flex-col gap-6 overflow-y-auto"></div>
         </div>
     </div>
 
-    <div class="w-full max-w-7xl mx-auto">
-        <div class="flex justify-between text-2xl font-mono text-white/40 mb-4 px-2">
+    <div class="w-full max-w-[95%] mx-auto">
+        <div class="flex justify-between text-3xl font-mono text-white/50 mb-6 px-4">
             <span id="tv-current-time">0:00</span>
             <span id="tv-total-time">0:00</span>
         </div>
-        <div class="w-full bg-white/5 h-5 rounded-full overflow-hidden border border-white/10 backdrop-blur-sm relative">
-            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-            <div id="tv-progress" class="bg-gradient-to-r from-neonCyan via-neonCyan to-neonPink h-full progress-smooth glow-bar relative z-10" style="width: 0%"></div>
+        
+        <div class="w-full bg-white/20 h-6 rounded-full overflow-hidden border border-white/10 backdrop-blur-md relative">
+            <div id="tv-progress" class="h-full progress-smooth glow-bar relative z-10" style="width: 0%"></div>
         </div>
-    </div>
-
-    <div class="absolute top-16 right-16 text-right opacity-30">
-        <h2 class="text-3xl font-black text-white italic tracking-tighter">NEON JUKEBOX</h2>
-        <p class="text-xs text-white tracking-[0.6em] uppercase">Música & Bar</p>
     </div>
 
     <script>
@@ -87,25 +87,20 @@
             return min + ":" + (sec < 10 ? '0' : '') + sec;
         }
 
-        // --- SISTEMA DE PREVISÃO LOCAL (PARA NÃO PARAR DE ATUALIZAR) ---
         function startLocalClock() {
             if (progressTimer) clearInterval(progressTimer);
             progressTimer = setInterval(() => {
                 if (localProgressMs < durationMs) {
-                    localProgressMs += 1000; // Aumenta 1 segundo internamente
-                    updateProgressBarOnly();
+                    localProgressMs += 1000;
+                    const percent = (localProgressMs / durationMs) * 100;
+                    document.getElementById('tv-progress').style.width = percent + '%';
+                    document.getElementById('tv-current-time').innerText = formatTime(localProgressMs);
                 }
             }, 1000);
         }
 
-        function updateProgressBarOnly() {
-            const percent = (localProgressMs / durationMs) * 100;
-            document.getElementById('tv-progress').style.width = percent + '%';
-            document.getElementById('tv-current-time').innerText = formatTime(localProgressMs);
-        }
-
         function updateTVUI(data) {
-            // Sincroniza o relógio local com os dados reais do Supabase
+            // Sincroniza o relógio interno com o Admin
             localProgressMs = data.progress_ms;
             durationMs = data.duration_ms;
 
@@ -122,30 +117,17 @@
                 document.getElementById('tv-suggester-box').classList.add('hidden');
             }
 
-            updateProgressBarOnly();
-            startLocalClock(); // Garante que o relógio local está a correr
+            startLocalClock();
         }
 
         async function fetchTVQueue() {
             const { data } = await supabaseClient.from('queue').select('*').eq('status', 'pending').order('votes', { ascending: false }).limit(5);
             const container = document.getElementById('tv-queue-list');
             container.innerHTML = "";
-
-            if (!data || data.length === 0) {
-                container.innerHTML = `<p class="text-white/20 italic text-center py-10">Sugere uma música no teu telemóvel!</p>`;
-                return;
-            }
-
-            data.forEach(song => {
+            (data || []).forEach(song => {
                 const div = document.createElement('div');
-                div.className = "flex items-center gap-5 bg-white/5 p-4 rounded-3xl border border-white/5 animate-song";
-                div.innerHTML = `
-                    <img src="${song.cover_url}" class="w-16 h-16 rounded-2xl shadow-lg">
-                    <div class="flex-1 overflow-hidden">
-                        <p class="text-xl font-bold text-white truncate leading-tight">${song.title}</p>
-                        <p class="text-sm text-neonCyan uppercase font-mono tracking-widest">${song.user_name}</p>
-                    </div>
-                `;
+                div.className = "flex items-center gap-6 bg-white/5 p-5 rounded-[30px] border border-white/5 animate-song";
+                div.innerHTML = `<img src="${song.cover_url}" class="w-20 h-20 rounded-2xl shadow-xl"><div class="flex-1 overflow-hidden"><p class="text-2xl font-bold text-white truncate">${song.title}</p><p class="text-lg text-neonCyan uppercase font-mono tracking-widest">${song.user_name}</p></div>`;
                 container.appendChild(div);
             });
         }
@@ -154,14 +136,8 @@
             const { data } = await supabaseClient.from('playback_status').select('*').eq('id', 1).single();
             if (data) updateTVUI(data);
 
-            supabaseClient.channel('tv_playback').on('postgres_changes', { 
-                event: 'UPDATE', schema: 'public', table: 'playback_status' 
-            }, payload => updateTVUI(payload.new)).subscribe();
-
-            supabaseClient.channel('tv_queue').on('postgres_changes', { 
-                event: '*', schema: 'public', table: 'queue' 
-            }, () => fetchTVQueue()).subscribe();
-            
+            supabaseClient.channel('tv_playback').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'playback_status' }, payload => updateTVUI(payload.new)).subscribe();
+            supabaseClient.channel('tv_queue').on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, () => fetchTVQueue()).subscribe();
             fetchTVQueue();
         }
 
