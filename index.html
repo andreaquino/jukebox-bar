@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Jukebox PRO</title>
+    <title>Neon Jukebox PRO - S256 Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -26,11 +26,11 @@
             <h1 class="text-4xl font-black italic text-white" style="text-shadow: 0 0 10px #ff00ff;">NEON JUKEBOX</h1>
             <div class="flex items-center gap-2 mt-1">
                 <span id="status-dot" class="w-2 h-2 rounded-full bg-red-500"></span>
-                <p id="connection-status" class="text-[10px] uppercase font-bold tracking-widest font-mono">Status: Offline</p>
+                <p id="connection-status" class="text-[10px] uppercase font-bold tracking-widest font-mono italic text-gray-500">Status: Offline</p>
             </div>
         </div>
         <div class="flex gap-2">
-            <button id="spotifyLoginBtn" onclick="loginSpotify()" class="px-4 py-2 bg-[#1DB954] text-black text-xs font-bold rounded-full hidden">LOGAR SPOTIFY</button>
+            <button id="spotifyLoginBtn" onclick="loginSpotify()" class="px-4 py-2 bg-[#1DB954] text-black text-xs font-bold rounded-full hidden">CONECTAR SPOTIFY</button>
             <button onclick="toggleMode()" class="px-4 py-2 border border-neonCyan text-neonCyan text-xs rounded-full">ADMIN / TV</button>
         </div>
     </header>
@@ -42,8 +42,8 @@
                     <img id="np-cover" src="https://via.placeholder.com/300?text=Neon+Bar" class="w-32 h-32 md:w-48 md:h-48 rounded-2xl shadow-2xl">
                     <div class="flex-1 overflow-hidden">
                         <span class="text-neonCyan text-xs font-bold uppercase tracking-widest">A tocar agora</span>
-                        <h3 id="np-title" class="text-3xl md:text-5xl font-bold text-white mt-2 truncate">Aguardando...</h3>
-                        <p id="np-artist" class="text-xl text-gray-400 truncate">Sincronizando com o Bar</p>
+                        <h3 id="np-title" class="text-3xl md:text-5xl font-bold text-white mt-2 truncate">Jukebox</h3>
+                        <p id="np-artist" class="text-xl text-gray-400 truncate">Aguardando sinal...</p>
                         <p id="np-suggester" class="text-sm text-pink-500 mt-4 font-mono font-bold truncate"></p>
                     </div>
                 </div>
@@ -59,12 +59,12 @@
                         <div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-[#1DB954] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
                         <span class="ml-3 text-xs font-bold text-gray-400 uppercase">Auto-Next</span>
                     </label>
-                    <button onclick="forcePlayNext()" class="bg-white text-black px-6 py-2 rounded-full font-black text-xs">FORÇAR PRÓXIMA</button>
+                    <button onclick="forcePlayNext()" class="bg-white text-black px-6 py-2 rounded-full font-black text-xs">PRÓXIMA</button>
                 </div>
             </section>
             
             <section id="search-section" class="bg-gray-900/50 rounded-3xl p-6 border border-gray-800">
-                <input type="text" id="searchInput" onkeypress="if(event.key==='Enter') searchSpotify()" placeholder="Pede a tua música..." class="w-full bg-black border border-gray-700 rounded-2xl px-6 py-4 text-white focus:border-neonPink outline-none">
+                <input type="text" id="searchInput" onkeypress="if(event.key==='Enter') searchSpotify()" placeholder="Pede a tua música..." class="w-full bg-black border border-gray-700 rounded-2xl px-6 py-4 text-white outline-none focus:border-neonPink">
                 <div id="search-results" class="mt-4 grid grid-cols-1 gap-2"></div>
             </section>
         </div>
@@ -82,99 +82,19 @@
         const spotifyClientId = '3351b90e625048618d7f976a4f4b5a5a';
         let spotifyAccessToken = localStorage.getItem('spotify_token');
         let isAdmin = localStorage.getItem('is_admin') === 'true';
-        let autoMode = false;
         const redirectUri = window.location.href.split('?')[0].split('#')[0];
 
-        // --- SISTEMA DE TRANSMISSÃO ---
-        async function monitorPlayback() {
-            if (!isAdmin || !spotifyAccessToken) return;
-
-            try {
-                // URLs Oficiais do Spotify
-                const res = await fetch("https://api.spotify.com/v1/me/player", {
-                    headers: { 'Authorization': 'Bearer ' + spotifyAccessToken }
-                });
-
-                const debug = document.getElementById('admin-debug');
-
-                if (res.status === 200) {
-                    const data = await res.json();
-                    if (!data.item) return;
-
-                    debug.innerText = "Sincronizado: " + data.item.name;
-
-                    // Envia para o Supabase
-                    await supabaseClient.from('playback_status').upsert({
-                        id: 1,
-                        title: data.item.name,
-                        artist: data.item.artists[0].name,
-                        cover_url: data.item.album.images[0].url,
-                        progress_ms: data.progress_ms,
-                        duration_ms: data.item.duration_ms,
-                        user_name: localStorage.getItem('last_suggester') || "Spotify"
-                    });
-
-                    if (autoMode) {
-                        const timeLeft = data.item.duration_ms - data.progress_ms;
-                        if (timeLeft < 15000 && timeLeft > 5000) autoPlayNext();
-                    }
-                } else if (res.status === 204) {
-                    debug.innerText = "Spotify OK, mas sem música tocando agora.";
-                } else {
-                    debug.innerText = "Erro Spotify: " + res.status;
-                }
-            } catch (e) { console.error(e); }
-        }
-
-        async function listenToBroadcast() {
-            // Todos ouvem o Supabase
-            const { data } = await supabaseClient.from('playback_status').select('*').eq('id', 1).single();
-            if (data) updateUI(data);
-
-            supabaseClient.channel('playback').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'playback_status' }, payload => {
-                updateUI(payload.new);
-            }).subscribe();
-        }
-
-        function updateUI(data) {
-            document.getElementById('np-title').innerText = data.title;
-            document.getElementById('np-artist').innerText = data.artist;
-            document.getElementById('np-cover').src = data.cover_url;
-            document.getElementById('np-suggester').innerText = "Sugerida por: " + data.user_name;
-            document.getElementById('progress-bar').style.width = (data.progress_ms / data.duration_ms * 100) + '%';
-            document.getElementById('status-dot').classList.replace('bg-red-500', 'bg-green-500');
-            document.getElementById('connection-status').innerText = "Ligado ao Bar";
-        }
-
-        // --- LOGIN E ADMIN ---
-        function toggleMode() {
-            const pin = prompt("PIN de Admin:");
-            if (pin === "1234") {
-                isAdmin = true;
-                localStorage.setItem('is_admin', 'true');
-                document.getElementById('admin-controls').classList.remove('hidden');
-                document.getElementById('admin-debug').classList.remove('hidden');
-                document.getElementById('spotifyLoginBtn').classList.remove('hidden');
-                alert("Modo Admin Ativado! Certifica-te que logaste no Spotify e tens música a tocar.");
-            } else {
-                isAdmin = false;
-                localStorage.setItem('is_admin', 'false');
-                location.reload();
-            }
-        }
+        // --- FUNÇÕES CRÍTICAS S256 ---
+        const sha256 = (plain) => crypto.subtle.digest('SHA-256', new TextEncoder().encode(plain));
+        const base64urlencode = (a) => btoa(String.fromCharCode.apply(null, new Uint8Array(a))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
         async function loginSpotify() {
-            const verifier = 'v_' + Math.random().toString(36).substr(2, 40);
+            const verifier = Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b => b.toString(16).padStart(2, '0')).join('');
             localStorage.setItem('code_verifier', verifier);
+            const challenge = base64urlencode(await sha256(verifier));
             const scope = 'user-modify-playback-state user-read-playback-state user-read-currently-playing';
-            window.location.href = `https://accounts.spotify.com/authorize?client_id=${spotifyClientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&code_challenge_method=plain&code_challenge=${verifier}&show_dialog=true`;
-        }
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        if (code) {
-            window.history.replaceState({}, document.title, window.location.pathname);
-            exchangeCodeForToken(code);
+            
+            window.location.href = `https://accounts.spotify.com/authorize?client_id=${spotifyClientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&code_challenge_method=S256&code_challenge=${challenge}&show_dialog=true`;
         }
 
         async function exchangeCodeForToken(authCode) {
@@ -183,20 +103,69 @@
             const res = await fetch('https://accounts.spotify.com/api/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params });
             const data = await res.json();
             if (data.access_token) {
-                spotifyAccessToken = data.access_token;
-                localStorage.setItem('spotify_token', spotifyAccessToken);
+                localStorage.setItem('spotify_token', data.access_token);
                 location.reload();
             }
         }
 
+        // --- MONITORIZAÇÃO (BROADCAST) ---
+        async function monitorPlayback() {
+            if (!isAdmin || !spotifyAccessToken) return;
+            try {
+                const res = await fetch("https://api.spotify.com/v1/me/player", { headers: { 'Authorization': 'Bearer ' + spotifyAccessToken } });
+                if (res.status === 200) {
+                    const data = await res.json();
+                    document.getElementById('admin-debug').innerText = "PC Admin: Sincronizado com Spotify.";
+                    await supabaseClient.from('playback_status').upsert({
+                        id: 1, title: data.item.name, artist: data.item.artists[0].name,
+                        cover_url: data.item.album.images[0].url, progress_ms: data.progress_ms,
+                        duration_ms: data.item.duration_ms, user_name: "Spotify"
+                    });
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function listenToBroadcast() {
+            supabaseClient.channel('playback').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'playback_status' }, payload => {
+                updateUI(payload.new);
+            }).subscribe();
+            const { data } = await supabaseClient.from('playback_status').select('*').eq('id', 1).single();
+            if (data) updateUI(data);
+        }
+
+        function updateUI(data) {
+            document.getElementById('np-title').innerText = data.title;
+            document.getElementById('np-artist').innerText = data.artist;
+            document.getElementById('np-cover').src = data.cover_url;
+            document.getElementById('progress-bar').style.width = (data.progress_ms / data.duration_ms * 100) + '%';
+            document.getElementById('status-dot').classList.replace('bg-red-500', 'bg-green-500');
+            document.getElementById('connection-status').innerText = "Ligado ao Bar";
+        }
+
+        function toggleMode() {
+            const pin = prompt("PIN:");
+            if (pin === "1234") {
+                isAdmin = true; localStorage.setItem('is_admin', 'true');
+                document.getElementById('admin-controls').classList.remove('hidden');
+                document.getElementById('admin-debug').classList.remove('hidden');
+                document.getElementById('spotifyLoginBtn').classList.remove('hidden');
+            } else {
+                isAdmin = false; localStorage.setItem('is_admin', 'false');
+                location.reload();
+            }
+        }
+
+        // Inicialização
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        if (code) exchangeCodeForToken(code);
         if (isAdmin) {
             document.getElementById('admin-controls').classList.remove('hidden');
             document.getElementById('admin-debug').classList.remove('hidden');
             document.getElementById('spotifyLoginBtn').classList.remove('hidden');
         }
-
-        // Funções de busca e fila (mantidas do código anterior)
-        setInterval(monitorPlayback, 2000); 
+        
+        setInterval(monitorPlayback, 2000);
         listenToBroadcast();
         lucide.createIcons();
     </script>
